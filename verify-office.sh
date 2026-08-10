@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$ROOT"
+# shellcheck source=lib.sh
+source "${ROOT}/lib.sh"
+
+need docker
+load_env
+
+FAIL=0
+pass() { echo "  PASS  $*"; }
+fail() { echo "  FAIL  $*" >&2; FAIL=1; }
+
+echo "=== Office verification ==="
+
+NC_HOST="${NEXTCLOUD_HOST:-}"
+CO_HOST="${COLLABORA_HOST:-$NC_HOST}"
+CO_PORT="${COLLABORA_PORT:-9980}"
+COLLABORA_PUBLIC_URL="http://${CO_HOST}:${CO_PORT}"
+COLLABORA_INTERNAL_URL="http://collabora:9980"
+NC_URL="https://${NC_HOST}"
+
+if docker compose exec -T nextcloud curl -fsS --max-time 15 \
+  "${COLLABORA_INTERNAL_URL}/hosting/discovery" | grep -q urlsrc; then
+  pass "Nextcloud can reach Collabora on the Docker network"
+else
+  fail "Nextcloud cannot reach ${COLLABORA_INTERNAL_URL}/hosting/discovery"
+fi
+
+if docker compose exec -T nextcloud curl -fsS --max-time 15 \
+  "${COLLABORA_PUBLIC_URL}/hosting/discovery" | grep -q urlsrc; then
+  pass "Collabora public discovery responds"
+else
+  fail "Collabora public discovery failed at ${COLLABORA_PUBLIC_URL}"
+fi
+
+if ! occ status 2>/dev/null | grep -q 'installed: true'; then
+  fail "Nextcloud is not installed yet"
+  exit 1
+fi
+pass "Nextcloud is installed"
+
+WOPI="$(occ config:app:get richdocuments wopi_url 2>/dev/null || true)"
+PUB="$(occ config:app:get richdocuments public_wopi_url 2>/dev/null || true)"
+[[ "$WOPI" == "$COLLABORA_INTERNAL_URL" ]] && pass "wopi_url is in-compose ($WOPI)" || fail "wopi_url expected $COLLABORA_INTERNAL_URL (got ${WOPI:-empty})"
+[[ "$PUB" == "$COLLABORA_PUBLIC_URL" ]] && pass "public_wopi_url is browser-facing ($PUB)" || fail "public_wopi_url expected $COLLABORA_PUBLIC_URL (got ${PUB:-empty})"
+
+echo
+if [[ "$FAIL" -eq 0 ]]; then
+  echo "All checks passed. Manual check: open ${NC_URL} → + New → Document"
+  exit 0
+fi
+echo "One or more checks failed. Re-run ./configure-office.sh" >&2
+exit 1

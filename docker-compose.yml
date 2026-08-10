@@ -1,0 +1,40 @@
+services:
+  nextcloud:
+    image: lscr.io/linuxserver/nextcloud:latest
+    container_name: nextcloud
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-America/New_York}
+    volumes:
+      - ./data/config:/config
+      - ./data/data:/data
+    ports:
+      - "${NEXTCLOUD_PORT:-443}:443"
+    networks:
+      - nextcloud-net
+
+  collabora:
+    image: collabora/code:latest
+    container_name: collabora
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    cap_add:
+      - MKNOD
+    environment:
+      - aliasgroup1=${ALIASGROUP1:-https://127.0.0.1:443}
+      - domain=${COLLABORA_DOMAIN_REGEX:-.*}
+      - server_name=${COLLABORA_SERVER_NAME:-127.0.0.1:9980}
+      - dictionaries=${DICTIONARIES:-en_US}
+      - username=admin
+      - password=${COLLABORA_ADMIN_PASSWORD:-changeme}
+      - extra_params=--o:ssl.enable=false --o:ssl.termination=false --o:ssl.ssl_verification=false --o:welcome.enable=false --o:net.frame_ancestors=*
+    ports:
+      - "${COLLABORA_PORT:-9980}:9980"
+    networks:
+      - nextcloud-net
+
+networks:
+  nextcloud-net:
