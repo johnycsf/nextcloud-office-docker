@@ -2,7 +2,7 @@
 
 Deploy [Nextcloud](https://nextcloud.com/) with Docker Compose, including **LibreOffice document editing** via [Collabora Online](https://www.collaboraonline.com/code/).
 
-Uses the **official** [`nextcloud`](https://hub.docker.com/_/nextcloud) image.
+Uses the **official** [`nextcloud`](https://hub.docker.com/_/nextcloud) image and Collabora’s official [`collabora/code`](https://hub.docker.com/r/collabora/code) image.
 
 Kubernetes version: [nextcloud-office-k8s](https://github.com/johnycsf/nextcloud-office-k8s)
 
