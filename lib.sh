@@ -22,8 +22,14 @@ detect_host_ip() {
   hostname -I 2>/dev/null | awk '{print $1}'
 }
 
+# Official Nextcloud image: occ via php as www-data
 occ() {
-  docker compose exec -T nextcloud occ "$@"
+  docker compose exec -u www-data -T nextcloud php occ "$@"
+}
+
+nc_fetch() {
+  local url="$1"
+  docker compose exec -T nextcloud php -r 'echo @file_get_contents($argv[1]);' "$url"
 }
 
 set_env_var() {

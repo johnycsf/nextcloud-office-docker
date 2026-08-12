@@ -16,20 +16,22 @@ echo "=== Office verification ==="
 
 NC_HOST="${NEXTCLOUD_HOST:-}"
 CO_HOST="${COLLABORA_HOST:-$NC_HOST}"
+NC_PORT="${NEXTCLOUD_PORT:-80}"
 CO_PORT="${COLLABORA_PORT:-9980}"
 COLLABORA_PUBLIC_URL="http://${CO_HOST}:${CO_PORT}"
 COLLABORA_INTERNAL_URL="http://collabora:9980"
-NC_URL="https://${NC_HOST}"
+NC_URL="http://${NC_HOST}"
+if [[ "${NC_PORT}" != "80" ]]; then
+  NC_URL="http://${NC_HOST}:${NC_PORT}"
+fi
 
-if docker compose exec -T nextcloud curl -fsS --max-time 15 \
-  "${COLLABORA_INTERNAL_URL}/hosting/discovery" | grep -q urlsrc; then
+if nc_fetch "${COLLABORA_INTERNAL_URL}/hosting/discovery" | grep -q urlsrc; then
   pass "Nextcloud can reach Collabora on the Docker network"
 else
   fail "Nextcloud cannot reach ${COLLABORA_INTERNAL_URL}/hosting/discovery"
 fi
 
-if docker compose exec -T nextcloud curl -fsS --max-time 15 \
-  "${COLLABORA_PUBLIC_URL}/hosting/discovery" | grep -q urlsrc; then
+if nc_fetch "${COLLABORA_PUBLIC_URL}/hosting/discovery" | grep -q urlsrc; then
   pass "Collabora public discovery responds"
 else
   fail "Collabora public discovery failed at ${COLLABORA_PUBLIC_URL}"

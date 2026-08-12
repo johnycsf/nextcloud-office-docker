@@ -1,17 +1,14 @@
 services:
   nextcloud:
-    image: lscr.io/linuxserver/nextcloud:latest
+    image: nextcloud:latest
     container_name: nextcloud
     restart: unless-stopped
     environment:
-      - PUID=${PUID:-1000}
-      - PGID=${PGID:-1000}
       - TZ=${TZ:-America/New_York}
     volumes:
-      - ./data/config:/config
-      - ./data/data:/data
+      - ./data/html:/var/www/html
     ports:
-      - "${NEXTCLOUD_PORT:-443}:443"
+      - "${NEXTCLOUD_PORT:-80}:80"
     networks:
       - nextcloud-net
 
@@ -24,7 +21,7 @@ services:
     cap_add:
       - MKNOD
     environment:
-      - aliasgroup1=${ALIASGROUP1:-https://127.0.0.1:443}
+      - aliasgroup1=${ALIASGROUP1:-http://127.0.0.1:80}
       - domain=${COLLABORA_DOMAIN_REGEX:-.*}
       - server_name=${COLLABORA_SERVER_NAME:-127.0.0.1:9980}
       - dictionaries=${DICTIONARIES:-en_US}

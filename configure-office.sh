@@ -11,7 +11,7 @@ load_env
 
 NC_HOST="${NEXTCLOUD_HOST:-$(detect_host_ip)}"
 CO_HOST="${COLLABORA_HOST:-$NC_HOST}"
-NC_PORT="${NEXTCLOUD_PORT:-443}"
+NC_PORT="${NEXTCLOUD_PORT:-80}"
 CO_PORT="${COLLABORA_PORT:-9980}"
 
 if [[ -z "${NC_HOST}" ]]; then
@@ -19,14 +19,14 @@ if [[ -z "${NC_HOST}" ]]; then
   exit 1
 fi
 
-NC_URL="https://${NC_HOST}"
-if [[ "${NC_PORT}" != "443" ]]; then
-  NC_URL="https://${NC_HOST}:${NC_PORT}"
+NC_URL="http://${NC_HOST}"
+if [[ "${NC_PORT}" != "80" ]]; then
+  NC_URL="http://${NC_HOST}:${NC_PORT}"
 fi
 COLLABORA_PUBLIC_URL="http://${CO_HOST}:${CO_PORT}"
 COLLABORA_INTERNAL_URL="http://collabora:9980"
 DOMAIN_REGEX="$(escape_regex_dots "${NC_HOST}")"
-ALIAS="https://${NC_HOST}:443"
+ALIAS="http://${NC_HOST}:80"
 
 echo "Nextcloud URL           : ${NC_URL}"
 echo "Collabora (browser)    : ${COLLABORA_PUBLIC_URL}"
@@ -58,7 +58,7 @@ done
 echo "Configuring Nextcloud Office..."
 occ config:system:set trusted_domains 1 --value="${NC_HOST}" >/dev/null
 occ config:system:set overwrite.cli.url --value="${NC_URL}" >/dev/null
-occ config:system:set overwriteprotocol --value="https" >/dev/null
+occ config:system:set overwriteprotocol --value="http" >/dev/null
 occ config:system:set allow_local_remote_servers --type=boolean --value=true >/dev/null
 
 occ app:disable richdocumentscode 2>/dev/null || true

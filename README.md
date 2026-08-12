@@ -2,6 +2,8 @@
 
 Deploy [Nextcloud](https://nextcloud.com/) with Docker Compose, including **LibreOffice document editing** via [Collabora Online](https://www.collaboraonline.com/code/).
 
+Uses the **official** [`nextcloud`](https://hub.docker.com/_/nextcloud) image.
+
 Kubernetes version: [nextcloud-office-k8s](https://github.com/johnycsf/nextcloud-office-k8s)
 
 ## Why Office needs Collabora
@@ -12,7 +14,7 @@ Kubernetes version: [nextcloud-office-k8s](https://github.com/johnycsf/nextcloud
 
 - Docker with Compose plugin
 - About **3 GiB RAM** free for Collabora in addition to Nextcloud
-- A browser that can reach this machine on ports **443** (Nextcloud) and **9980** (Collabora)
+- A browser that can reach this machine on ports **80** (Nextcloud) and **9980** (Collabora)
 
 ## Install
 
@@ -52,15 +54,16 @@ NEXTCLOUD_HOST=192.168.1.50 COLLABORA_HOST=192.168.1.50 ./configure-office.sh
 
 | Your situation | What to put |
 |----------------|-------------|
-| Browser opens `https://192.168.0.20/` | `NEXTCLOUD_HOST=192.168.0.20` |
-| Browser opens `https://myserver.lan/` | `NEXTCLOUD_HOST=myserver.lan` |
+| Browser opens `http://192.168.0.20/` | `NEXTCLOUD_HOST=192.168.0.20` |
+| Browser opens `http://myserver.lan/` | `NEXTCLOUD_HOST=myserver.lan` |
 
 These are **not** Docker internal names like `nextcloud` / `collabora` (those are already handled inside Compose).
+
 ## Customize
 
-Edit `.env` (from `.env.example`): timezone, `PUID`/`PGID`, ports, and hostnames.
+Edit `.env` (from `.env.example`): timezone, ports, and hostnames.
 
-Data lives in `./data/` (gitignored).
+Data lives in `./data/html` (gitignored) — mapped to `/var/www/html` in the official image.
 
 ## Update
 
