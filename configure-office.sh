@@ -43,6 +43,7 @@ docker compose up -d collabora
 
 echo "Waiting until Nextcloud setup wizard is finished..."
 echo "Open: ${NC_URL}"
+echo "(Database is MariaDB — create the admin account only; DB fields are auto-configured.)"
 for i in $(seq 1 180); do
   if occ status 2>/dev/null | grep -q 'installed: true'; then
     echo "Nextcloud is installed."

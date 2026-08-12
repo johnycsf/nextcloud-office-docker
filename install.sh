@@ -13,6 +13,7 @@ if [[ ! -f .env ]]; then
   echo "Created .env from .env.example"
 fi
 
+ensure_db_passwords
 load_env
 IP="$(detect_host_ip || true)"
 if [[ -n "${IP}" ]]; then
@@ -26,16 +27,18 @@ if [[ -n "${IP}" ]]; then
   fi
 fi
 
-mkdir -p data/html
+mkdir -p data/html data/db
 echo "Pulling images (Collabora is large)..."
 docker compose pull
 docker compose up -d
 
+wait_for_db
+
 echo
-echo "Containers are starting."
+echo "Containers are starting with MariaDB (not SQLite)."
 load_env
 echo "1) Open http://${NEXTCLOUD_HOST}/"
-echo "2) Create your Nextcloud admin account"
+echo "2) Create your Nextcloud admin account (database fields are already configured)"
 echo "3) This script will finish Office setup automatically"
 echo
 "${ROOT}/configure-office.sh"

@@ -43,6 +43,19 @@ if ! occ status 2>/dev/null | grep -q 'installed: true'; then
 fi
 pass "Nextcloud is installed"
 
+DBTYPE="$(occ config:system:get dbtype 2>/dev/null || true)"
+if [[ "${DBTYPE}" == "mysql" ]]; then
+  pass "Database is MariaDB/MySQL (dbtype=${DBTYPE})"
+else
+  fail "Expected MariaDB/MySQL (dbtype=mysql), got: ${DBTYPE:-empty} — use a fresh data/ volume with MYSQL_* set"
+fi
+
+if docker compose exec -T db healthcheck.sh --connect --innodb_initialized >/dev/null 2>&1; then
+  pass "MariaDB healthcheck is OK"
+else
+  fail "MariaDB healthcheck failed"
+fi
+
 WOPI="$(occ config:app:get richdocuments wopi_url 2>/dev/null || true)"
 PUB="$(occ config:app:get richdocuments public_wopi_url 2>/dev/null || true)"
 [[ "$WOPI" == "$COLLABORA_INTERNAL_URL" ]] && pass "wopi_url is in-compose ($WOPI)" || fail "wopi_url expected $COLLABORA_INTERNAL_URL (got ${WOPI:-empty})"

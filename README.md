@@ -2,9 +2,18 @@
 
 Deploy [Nextcloud](https://nextcloud.com/) with Docker Compose, including **LibreOffice document editing** via [Collabora Online](https://www.collaboraonline.com/code/).
 
-Uses the **official** [`nextcloud`](https://hub.docker.com/_/nextcloud) image and Collabora’s official [`collabora/code`](https://hub.docker.com/r/collabora/code) image.
+Uses the **official** [`nextcloud`](https://hub.docker.com/_/nextcloud) image, Collabora’s official [`collabora/code`](https://hub.docker.com/r/collabora/code) image, and **official** [`mariadb:lts`](https://hub.docker.com/_/mariadb) (not SQLite).
 
 Kubernetes version: [nextcloud-office-k8s](https://github.com/johnycsf/nextcloud-office-k8s)
+
+## Why MariaDB
+
+Nextcloud’s docs treat SQLite as testing/minimal only. [MariaDB and PostgreSQL are recommended](https://docs.nextcloud.com/server/latest/admin_manual/configuration_database/linux_database_configuration.html). This repo follows the [official Nextcloud Docker Compose MariaDB example](https://github.com/nextcloud/docker#running-this-image-with-docker-compose):
+
+- Image: `mariadb:lts`
+- `transaction-isolation=READ-COMMITTED` (required)
+- `binlog-format=ROW` + `utf8mb4` / `utf8mb4_bin` (admin manual guidance)
+- Nextcloud auto-config via `MYSQL_HOST` / `MYSQL_DATABASE` / `MYSQL_USER` / `MYSQL_PASSWORD`
 
 ## Why Office needs Collabora
 
@@ -13,7 +22,7 @@ Kubernetes version: [nextcloud-office-k8s](https://github.com/johnycsf/nextcloud
 ## What you need
 
 - Docker with Compose plugin
-- About **3 GiB RAM** free for Collabora in addition to Nextcloud
+- About **3 GiB RAM** free for Collabora in addition to Nextcloud + MariaDB
 - A browser that can reach this machine on ports **80** (Nextcloud) and **9980** (Collabora)
 
 ## Install
@@ -27,12 +36,15 @@ chmod +x install.sh configure-office.sh verify-office.sh
 
 The script will:
 
-1. Start Nextcloud + Collabora
-2. Wait for you to create the Nextcloud admin account
-3. Wire Nextcloud Office to Collabora
-4. Run connectivity checks
+1. Generate MariaDB passwords into `.env` (if still placeholders)
+2. Start MariaDB + Nextcloud + Collabora
+3. Wait for you to create the Nextcloud admin account (DB is already wired)
+4. Wire Nextcloud Office to Collabora
+5. Run connectivity + database checks
 
 Then try: **+ New → Document**.
+
+Fresh data only — do **not** reuse an old SQLite `data/html` tree with this MariaDB setup.
 
 ### Verify anytime
 
@@ -40,30 +52,26 @@ Then try: **+ New → Document**.
 ./verify-office.sh
 ```
 
+Checks include Collabora wiring and `dbtype=mysql` (MariaDB).
+
 ### If Office fails — set your real LAN address
 
 `NEXTCLOUD_HOST` / `COLLABORA_HOST` are the address **your browser uses** to reach this machine (your home LAN IP or hostname).  
 `192.168.1.50` is only an **example** — replace it with yours.
 
-Find it with `hostname -I` on the Docker host, or check your router’s client list. On a typical single-PC homelab both values are the same:
-
 ```bash
 # Example only — use YOUR LAN IP or hostname
-NEXTCLOUD_HOST=192.168.1.50 COLLABORA_HOST=192.168.1.50 ./configure-office.sh
+NEXTCLOUD_HOST=192.168.0.20 COLLABORA_HOST=192.168.0.20 ./configure-office.sh
 ```
-
-| Your situation | What to put |
-|----------------|-------------|
-| Browser opens `http://192.168.0.20/` | `NEXTCLOUD_HOST=192.168.0.20` |
-| Browser opens `http://myserver.lan/` | `NEXTCLOUD_HOST=myserver.lan` |
-
-These are **not** Docker internal names like `nextcloud` / `collabora` (those are already handled inside Compose).
 
 ## Customize
 
-Edit `.env` (from `.env.example`): timezone, ports, and hostnames.
+Edit `.env` (from `.env.example`): timezone, ports, hostnames, MariaDB credentials.
 
-Data lives in `./data/html` (gitignored) — mapped to `/var/www/html` in the official image.
+| Path | Purpose |
+|------|---------|
+| `./data/html` | Nextcloud files (`/var/www/html`) |
+| `./data/db` | MariaDB data (`/var/lib/mysql`) |
 
 ## Update
 
@@ -90,6 +98,7 @@ rm -rf data .env
 | New → Document blank/spins | Open `http://YOUR_IP:9980/hosting/discovery` from your PC |
 | Wrong IP after DHCP change | Re-run `./configure-office.sh` with the new host |
 | Collabora OOM | Free RAM or raise Docker memory limits |
+| `dbtype` is `sqlite` | Remove `data/` and re-run `./install.sh` so `MYSQL_*` auto-config applies on first install |
 
 ## Contributing
 
