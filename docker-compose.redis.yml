@@ -1,0 +1,26 @@
+# Optional Redis overlay (official Nextcloud Compose pattern).
+# Enabled by: ./install.sh --redis
+# https://github.com/nextcloud/docker#running-this-image-with-docker-compose
+# https://docs.nextcloud.com/server/latest/admin_manual/configuration_server/caching_configuration.html
+services:
+  redis:
+    image: redis:alpine
+    container_name: nextcloud-redis
+    restart: unless-stopped
+    networks:
+      - nextcloud-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  nextcloud:
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_HOST=redis

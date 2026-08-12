@@ -39,7 +39,7 @@ set_env_var COLLABORA_DOMAIN_REGEX "${DOMAIN_REGEX}"
 set_env_var COLLABORA_SERVER_NAME "${CO_HOST}:${CO_PORT}"
 
 echo "Recreating Collabora with updated allow-list..."
-docker compose up -d collabora
+compose up -d collabora
 
 echo "Waiting until Nextcloud setup wizard is finished..."
 echo "Open: ${NC_URL}"

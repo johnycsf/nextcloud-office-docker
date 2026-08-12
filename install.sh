@@ -5,6 +5,12 @@ cd "$ROOT"
 # shellcheck source=lib.sh
 source "${ROOT}/lib.sh"
 
+parse_install_args "$@"
+if [[ "${SHOW_HELP}" -eq 1 ]]; then
+  print_install_help
+  exit 0
+fi
+
 need docker
 docker compose version >/dev/null
 
@@ -14,6 +20,7 @@ if [[ ! -f .env ]]; then
 fi
 
 refuse_legacy_nextcloud_data
+apply_redis_preference
 ensure_db_passwords
 load_env
 IP="$(detect_host_ip || true)"
@@ -30,13 +37,18 @@ fi
 
 mkdir -p data/html data/db
 echo "Pulling images (Collabora is large)..."
-docker compose pull
-docker compose up -d
+compose pull
+compose up -d
 
 wait_for_db
+wait_for_redis
 
 echo
-echo "Containers are starting with MariaDB (not SQLite)."
+if redis_enabled; then
+  echo "Containers are starting with MariaDB + Redis (not SQLite)."
+else
+  echo "Containers are starting with MariaDB (not SQLite). Redis skipped (pass --redis to enable)."
+fi
 load_env
 echo "1) Open http://${NEXTCLOUD_HOST}/"
 echo "2) Create your Nextcloud admin account (database fields are already configured)"

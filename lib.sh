@@ -84,16 +84,6 @@ EOF
   fi
 }
 
-# Official Nextcloud image: occ via php as www-data
-occ() {
-  docker compose exec -u www-data -T nextcloud php occ "$@"
-}
-
-nc_fetch() {
-  local url="$1"
-  docker compose exec -T nextcloud php -r 'echo @file_get_contents($argv[1]);' "$url"
-}
-
 set_env_var() {
   local key="$1" value="$2"
   if grep -q "^${key}=" .env; then
@@ -105,17 +95,98 @@ set_env_var() {
   fi
 }
 
+# docker compose with optional Redis overlay when ENABLE_REDIS=yes
+compose() {
+  load_env
+  local files=(-f docker-compose.yml)
+  if redis_enabled; then
+    files+=(-f docker-compose.redis.yml)
+  fi
+  docker compose "${files[@]}" "$@"
+}
+
+redis_enabled() {
+  load_env
+  [[ "${ENABLE_REDIS:-}" == "yes" || "${ENABLE_REDIS:-}" == "1" || "${ENABLE_REDIS:-}" == "true" ]]
+}
+
+parse_install_args() {
+  WITH_REDIS=0
+  SHOW_HELP=0
+  local arg
+  for arg in "$@"; do
+    case "${arg}" in
+      --redis) WITH_REDIS=1 ;;
+      -h|--help) SHOW_HELP=1 ;;
+      *)
+        echo "Unknown option: ${arg}" >&2
+        echo "Usage: ./install.sh [--redis]" >&2
+        exit 1
+        ;;
+    esac
+  done
+}
+
+print_install_help() {
+  cat <<'EOF'
+Usage: ./install.sh [--redis]
+
+  --redis   Also start official redis:alpine and set REDIS_HOST for Nextcloud
+            (caching / transactional file locking). Optional; MariaDB is always used.
+
+Examples:
+  ./install.sh
+  ./install.sh --redis
+EOF
+}
+
+apply_redis_preference() {
+  # --redis turns Redis on and persists in .env for later compose/occ calls
+  if [[ "${WITH_REDIS:-0}" -eq 1 ]]; then
+    set_env_var ENABLE_REDIS yes
+    echo "Redis enabled (ENABLE_REDIS=yes). Overlay: docker-compose.redis.yml"
+  fi
+  load_env
+}
+
 wait_for_db() {
   echo "Waiting for MariaDB to become healthy..."
   local i
   for i in $(seq 1 60); do
-    if docker compose exec -T db healthcheck.sh --connect --innodb_initialized >/dev/null 2>&1; then
+    if compose exec -T db healthcheck.sh --connect --innodb_initialized >/dev/null 2>&1; then
       echo "MariaDB is ready."
       return 0
     fi
     sleep 2
   done
   echo "MariaDB did not become ready in time." >&2
-  docker compose logs --tail=50 db >&2 || true
+  compose logs --tail=50 db >&2 || true
   exit 1
 }
+
+wait_for_redis() {
+  redis_enabled || return 0
+  echo "Waiting for Redis to become healthy..."
+  local i
+  for i in $(seq 1 30); do
+    if compose exec -T redis redis-cli ping 2>/dev/null | grep -q PONG; then
+      echo "Redis is ready."
+      return 0
+    fi
+    sleep 2
+  done
+  echo "Redis did not become ready in time." >&2
+  compose logs --tail=50 redis >&2 || true
+  exit 1
+}
+
+# Official Nextcloud image: occ via php as www-data
+occ() {
+  compose exec -u www-data -T nextcloud php occ "$@"
+}
+
+nc_fetch() {
+  local url="$1"
+  compose exec -T nextcloud php -r 'echo @file_get_contents($argv[1]);' "$url"
+}
+

@@ -50,10 +50,26 @@ else
   fail "Expected MariaDB/MySQL (dbtype=mysql), got: ${DBTYPE:-empty} — use a fresh data/ volume with MYSQL_* set"
 fi
 
-if docker compose exec -T db healthcheck.sh --connect --innodb_initialized >/dev/null 2>&1; then
+if compose exec -T db healthcheck.sh --connect --innodb_initialized >/dev/null 2>&1; then
   pass "MariaDB healthcheck is OK"
 else
   fail "MariaDB healthcheck failed"
+fi
+
+if redis_enabled; then
+  if compose exec -T redis redis-cli ping 2>/dev/null | grep -q PONG; then
+    pass "Redis responds to PING"
+  else
+    fail "Redis enabled but not responding (ENABLE_REDIS=yes)"
+  fi
+  # REDIS_HOST is set via compose overlay for the nextcloud service
+  if compose exec -T nextcloud /bin/sh -c 'printenv REDIS_HOST' 2>/dev/null | grep -qx 'redis'; then
+    pass "Nextcloud has REDIS_HOST=redis"
+  else
+    fail "Nextcloud REDIS_HOST is not redis — recreate with ./install.sh --redis"
+  fi
+else
+  pass "Redis not enabled (optional; use ./install.sh --redis)"
 fi
 
 WOPI="$(occ config:app:get richdocuments wopi_url 2>/dev/null || true)"
