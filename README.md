@@ -38,12 +38,24 @@ Then try: **+ New → Document**.
 ./verify-office.sh
 ```
 
-If your IP/DNS changes:
+### If Office fails — set your real LAN address
+
+`NEXTCLOUD_HOST` / `COLLABORA_HOST` are the address **your browser uses** to reach this machine (your home LAN IP or hostname).  
+`192.168.1.50` is only an **example** — replace it with yours.
+
+Find it with `hostname -I` on the Docker host, or check your router’s client list. On a typical single-PC homelab both values are the same:
 
 ```bash
+# Example only — use YOUR LAN IP or hostname
 NEXTCLOUD_HOST=192.168.1.50 COLLABORA_HOST=192.168.1.50 ./configure-office.sh
 ```
 
+| Your situation | What to put |
+|----------------|-------------|
+| Browser opens `https://192.168.0.20/` | `NEXTCLOUD_HOST=192.168.0.20` |
+| Browser opens `https://myserver.lan/` | `NEXTCLOUD_HOST=myserver.lan` |
+
+These are **not** Docker internal names like `nextcloud` / `collabora` (those are already handled inside Compose).
 ## Customize
 
 Edit `.env` (from `.env.example`): timezone, `PUID`/`PGID`, ports, and hostnames.
