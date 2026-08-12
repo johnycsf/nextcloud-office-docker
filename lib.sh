@@ -116,11 +116,11 @@ parse_install_args() {
   local arg
   for arg in "$@"; do
     case "${arg}" in
-      --redis) WITH_REDIS=1 ;;
+      --include-redis) WITH_REDIS=1 ;;
       -h|--help) SHOW_HELP=1 ;;
       *)
         echo "Unknown option: ${arg}" >&2
-        echo "Usage: ./install.sh [--redis]" >&2
+        echo "Usage: ./install.sh [--include-redis]" >&2
         exit 1
         ;;
     esac
@@ -129,19 +129,19 @@ parse_install_args() {
 
 print_install_help() {
   cat <<'EOF'
-Usage: ./install.sh [--redis]
+Usage: ./install.sh [--include-redis]
 
-  --redis   Also start official redis:alpine and set REDIS_HOST for Nextcloud
+  --include-redis   Also start official redis:alpine and set REDIS_HOST for Nextcloud
             (caching / transactional file locking). Optional; MariaDB is always used.
 
 Examples:
   ./install.sh
-  ./install.sh --redis
+  ./install.sh --include-redis
 EOF
 }
 
 apply_redis_preference() {
-  # --redis turns Redis on and persists in .env for later compose/occ calls
+  # --include-redis turns Redis on and persists in .env for later compose/occ calls
   if [[ "${WITH_REDIS:-0}" -eq 1 ]]; then
     set_env_var ENABLE_REDIS yes
     echo "Redis enabled (ENABLE_REDIS=yes). Overlay: docker-compose.redis.yml"

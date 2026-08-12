@@ -35,13 +35,13 @@ cd nextcloud-office-docker
 chmod +x install.sh configure-office.sh verify-office.sh
 ./install.sh
 # optional Redis (official caching / file locking):
-# ./install.sh --redis
+# ./install.sh --include-redis
 ```
 
 The script will:
 
 1. Generate MariaDB passwords into `.env` (if still placeholders)
-2. Start MariaDB + Nextcloud + Collabora (and Redis if you passed `--redis`)
+2. Start MariaDB + Nextcloud + Collabora (and Redis if you passed `--include-redis`)
 3. Wait for you to create the Nextcloud admin account (DB is already wired)
 4. Wire Nextcloud Office to Collabora
 5. Run connectivity + database checks
@@ -53,7 +53,7 @@ Then try: **+ New → Document**.
 Redis is **not** required. It helps with caching and file locking under more concurrent use, matching the [official Nextcloud Compose example](https://github.com/nextcloud/docker#running-this-image-with-docker-compose).
 
 ```bash
-./install.sh --redis
+./install.sh --include-redis
 ```
 
 That sets `ENABLE_REDIS=yes` in `.env` and applies `docker-compose.redis.yml` (`redis:alpine` + `REDIS_HOST=redis`). Re-running `./install.sh` later keeps Redis if already enabled.
@@ -92,7 +92,7 @@ Edit `.env` (from `.env.example`): timezone, ports, hostnames, MariaDB credentia
 Only for installs that **already** use official Nextcloud + MariaDB from this repo:
 
 ```bash
-./install.sh          # or: ./install.sh --redis
+./install.sh          # or: ./install.sh --include-redis
 ./configure-office.sh
 ./verify-office.sh
 ```

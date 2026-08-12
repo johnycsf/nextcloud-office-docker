@@ -47,7 +47,7 @@ echo
 if redis_enabled; then
   echo "Containers are starting with MariaDB + Redis (not SQLite)."
 else
-  echo "Containers are starting with MariaDB (not SQLite). Redis skipped (pass --redis to enable)."
+  echo "Containers are starting with MariaDB (not SQLite). Redis skipped (pass --include-redis to enable)."
 fi
 load_env
 echo "1) Open http://${NEXTCLOUD_HOST}/"

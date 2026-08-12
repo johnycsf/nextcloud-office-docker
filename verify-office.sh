@@ -66,10 +66,10 @@ if redis_enabled; then
   if compose exec -T nextcloud /bin/sh -c 'printenv REDIS_HOST' 2>/dev/null | grep -qx 'redis'; then
     pass "Nextcloud has REDIS_HOST=redis"
   else
-    fail "Nextcloud REDIS_HOST is not redis — recreate with ./install.sh --redis"
+    fail "Nextcloud REDIS_HOST is not redis — recreate with ./install.sh --include-redis"
   fi
 else
-  pass "Redis not enabled (optional; use ./install.sh --redis)"
+  pass "Redis not enabled (optional; use ./install.sh --include-redis)"
 fi
 
 WOPI="$(occ config:app:get richdocuments wopi_url 2>/dev/null || true)"
