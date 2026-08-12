@@ -4,6 +4,8 @@ Deploy [Nextcloud](https://nextcloud.com/) with Docker Compose, including **Libr
 
 Uses the **official** [`nextcloud`](https://hub.docker.com/_/nextcloud) image, Collabora’s official [`collabora/code`](https://hub.docker.com/r/collabora/code) image, and **official** [`mariadb:lts`](https://hub.docker.com/_/mariadb) (not SQLite).
 
+> **Updating an older clone?** `git pull` alone will not delete `data/`. Re-running `./install.sh` / Compose against LinuxServer or SQLite data is **not** supported in-place. Read [BREAKING-CHANGES.md](BREAKING-CHANGES.md).
+
 Kubernetes version: [nextcloud-office-k8s](https://github.com/johnycsf/nextcloud-office-k8s)
 
 ## Why MariaDB
@@ -75,6 +77,8 @@ Edit `.env` (from `.env.example`): timezone, ports, hostnames, MariaDB credentia
 
 ## Update
 
+Only for installs that **already** use official Nextcloud + MariaDB from this repo:
+
 ```bash
 docker compose pull
 docker compose up -d
@@ -83,6 +87,8 @@ docker compose up -d
 ```
 
 Upgrade Nextcloud **one major version at a time**.
+
+If you still run SQLite or LinuxServer volumes, do **not** use the Update steps after a pull — see [BREAKING-CHANGES.md](BREAKING-CHANGES.md).
 
 ## Uninstall
 

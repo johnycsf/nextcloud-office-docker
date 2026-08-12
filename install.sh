@@ -13,6 +13,7 @@ if [[ ! -f .env ]]; then
   echo "Created .env from .env.example"
 fi
 
+refuse_legacy_nextcloud_data
 ensure_db_passwords
 load_env
 IP="$(detect_host_ip || true)"
