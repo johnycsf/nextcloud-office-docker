@@ -98,16 +98,17 @@ chmod +x update.sh
 ./update.sh
 ```
 
-Before changing anything, the script writes a timestamped rollback copy under `backups/`. After a successful update it asks whether to **keep** or **delete** that snapshot, and how many local copies to retain (older ones are pruned). Copy important backups to an external drive, NAS, or cloud so they do not fill this disk.
+Before changing anything, the script runs `./backup.sh` into `./backups` (incremental, database-safe). After a successful update it asks whether to **keep** or **delete** that snapshot, and how many local copies to retain (older ones are pruned). Copy important backups to an external drive, NAS, or cloud so they do not fill this disk.
 
-To roll back later:
+To roll back later (same tool as disaster recovery):
 
 ```bash
-chmod +x restore.sh
-./restore.sh
-# or from an external copy of the backups folder:
-./restore.sh --external /path/to/backups
+./backup.sh --restore --from ./backups
+# or from an external copy:
+./backup.sh --restore --from /mnt/usb/my-backups
 ```
+
+Older `backups/update-*` tarball folders (from previous script versions) are no longer used by `./update.sh`; use each folder's `RESTORE.txt` if you still need one, or delete them to free space.
 
 This pulls/rebuilds images, recreates containers as needed, and runs `docker image prune` for **dangling** (untagged) images only — it will not wipe other projects' images or your `data/` volume.
 
@@ -120,7 +121,7 @@ SQLite / LinuxServer installs: see [BREAKING-CHANGES.md](BREAKING-CHANGES.md).
 
 ## Disaster recovery (full backup / restore)
 
-Incremental snapshots via `rsync` hardlinks (unchanged files are not re-copied). Separate from `update.sh` rollback tarballs.
+Incremental snapshots via `rsync` hardlinks (unchanged files are not re-copied). `./update.sh` uses this same `backup.sh` before updating (into `./backups`).
 
 ```bash
 chmod +x backup.sh
