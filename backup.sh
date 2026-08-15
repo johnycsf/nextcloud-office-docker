@@ -35,6 +35,11 @@ Fresh-machine workflow:
   1) Install this stack on the new host (./install.sh) so runtime exists.
   2) ./backup.sh --restore --from /mnt/usb/my-backups
   3) Script replaces data/secrets and finishes app-specific repair (e.g. Nextcloud scan).
+
+Database safety:
+  MariaDB/Nextcloud  — logical dump (--single-transaction), never live datadir copy.
+  SQLite apps       — service stopped/scaled down, WAL checkpoint, then file copy.
+  Incremental rsync applies to files; each MariaDB dump is a full verified SQL file.
 EOF
 }
 
@@ -172,6 +177,54 @@ EOF
 
 
 
+
+# --- MariaDB safety (logical dump only; never rsync live datadir) ---
+verify_mariadb_dump() {
+  local f="$1"
+  if [[ ! -s "$f" ]]; then
+    echo "SQL dump missing or empty: $f" >&2
+    return 1
+  fi
+  if ! grep -q 'Dump completed' "$f"; then
+    echo "SQL dump looks incomplete (no 'Dump completed' marker): $f" >&2
+    return 1
+  fi
+  if ! grep -qE 'CREATE TABLE|INSERT INTO' "$f"; then
+    echo "SQL dump has no CREATE TABLE/INSERT INTO — refusing: $f" >&2
+    return 1
+  fi
+  local bytes
+  bytes="$(wc -c <"$f" | tr -d ' ')"
+  echo "    Verified MariaDB dump (${bytes} bytes)."
+}
+
+sha256_file() {
+  local f="$1"
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$f" | awk '{print $1}'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$f" | awk '{print $1}'
+  else
+    echo "unavailable"
+  fi
+}
+
+verify_dump_checksum() {
+  local f="$1"
+  local meta="$2"
+  local expected=""
+  expected="$(grep -E '^db_sha256=' "$meta" 2>/dev/null | cut -d= -f2- || true)"
+  [[ -n "$expected" && "$expected" != "unavailable" ]] || return 0
+  local actual
+  actual="$(sha256_file "$f")"
+  if [[ "$actual" != "$expected" ]]; then
+    echo "SQL dump checksum mismatch (expected ${expected}, got ${actual})." >&2
+    echo "Refusing restore — file may be corrupt or truncated." >&2
+    return 1
+  fi
+  echo "    Checksum OK (${actual})."
+}
+
 wait_nextcloud_ready() {
   echo "Waiting for Nextcloud to become ready..."
   local i
@@ -204,6 +257,7 @@ post_restore_nextcloud() {
   echo "==> Optional verify: ./verify-office.sh"
 }
 
+
 do_backup() {
   need_rsync
   need docker
@@ -214,48 +268,79 @@ do_backup() {
   load_env
   prepare_snapshot_dirs "$DEST"
   echo "==> Snapshot ${SNAP_NAME} -> ${SNAP_DIR}"
+  echo "==> DB strategy: logical MariaDB dump (safe). Files use incremental rsync."
+  echo "    Never copying live data/db InnoDB files into the snapshot."
 
-  # Quiesce app writes; keep DB up for a consistent dump, then sync files.
-  echo "==> Enabling maintenance mode..."
+  if ! compose ps -q db 2>/dev/null | grep -q .; then
+    echo "MariaDB (db) is not running — refusing backup (would risk an incomplete snapshot)." >&2
+    rm -rf "${SNAP_DIR}"
+    exit 1
+  fi
+
+  maintenance_off() { occ maintenance:mode --off >/dev/null 2>&1 || true; }
+  cleanup_failed_snap() {
+    maintenance_off
+    rm -rf "${SNAP_DIR}"
+  }
+  trap cleanup_failed_snap EXIT
+
+  echo "==> Enabling Nextcloud maintenance mode (no writes during dump/files sync)..."
   if compose ps -q nextcloud 2>/dev/null | grep -q .; then
-    occ maintenance:mode --on || true
-  fi
-
-  echo "==> Dumping MariaDB..."
-  if compose ps -q db 2>/dev/null | grep -q .; then
-    compose exec -T db mariadb-dump \
-      -u"${MYSQL_USER:-nextcloud}" \
-      -p"${MYSQL_PASSWORD}" \
-      --single-transaction \
-      --routines \
-      "${MYSQL_DATABASE:-nextcloud}" \
-      >"${SNAP_DIR}/nextcloud-db.sql"
+    occ maintenance:mode --on
   else
-    echo "Warning: db container not running — skipping SQL dump." >&2
+    echo "Warning: nextcloud container not running — dumping DB only; files may be stale." >&2
   fi
 
-  echo "==> Syncing Nextcloud files (data/html)..."
+  echo "==> Dumping MariaDB with a consistent InnoDB snapshot..."
+  local dump="${SNAP_DIR}/nextcloud-db.sql"
+  compose exec -T db mariadb-dump \
+    -u"${MYSQL_USER:-nextcloud}" \
+    -p"${MYSQL_PASSWORD}" \
+    --single-transaction \
+    --quick \
+    --routines \
+    --triggers \
+    --events \
+    --hex-blob \
+    --add-drop-table \
+    --default-character-set=utf8mb4 \
+    "${MYSQL_DATABASE:-nextcloud}" \
+    >"${dump}"
+  verify_mariadb_dump "${dump}"
+  local sum
+  sum="$(sha256_file "${dump}")"
+
+  echo "==> Syncing Nextcloud files (data/html only)..."
   local prev_files=""
   [[ -n "${PREV_LINK}" && -d "${PREV_LINK}/files" ]] && prev_files="${PREV_LINK}/files"
   if [[ -d data/html ]]; then
     rsync_incremental "data/html" "${SNAP_DIR}/files" "${prev_files}"
   else
-    mkdir -p "${SNAP_DIR}/files"
+    echo "data/html missing — refusing incomplete backup." >&2
+    exit 1
   fi
 
   [[ -f .env ]] && cp -a .env "${SNAP_DIR}/"
   [[ -f docker-compose.yml ]] && cp -a docker-compose.yml "${SNAP_DIR}/"
   [[ -f docker-compose.redis.yml ]] && cp -a docker-compose.redis.yml "${SNAP_DIR}/"
-  write_meta "${SNAP_DIR}" "$STACK_ID" "nextcloud html + mariadb dump"
+  cat >"${SNAP_DIR}/META.txt" <<EOF
+stack=${STACK_ID}
+created=$(date -Iseconds)
+host=$(hostname 2>/dev/null || echo unknown)
+note=nextcloud html + verified mariadb logical dump
+db_engine=mariadb
+db_method=mariadb-dump --single-transaction
+db_sha256=${sum}
+files=data/html
+datadir_excluded=data/db
+EOF
 
-  echo "==> Disabling maintenance mode..."
-  if compose ps -q nextcloud 2>/dev/null | grep -q .; then
-    occ maintenance:mode --off || true
-  fi
-
+  trap - EXIT
+  maintenance_off
   finalize_snapshot "$DEST"
   prune_snapshots "$DEST" "${KEEP}"
   echo
+  echo "Backup OK. SQL dump is a full logical copy each run; file trees are incremental via hardlinks."
   echo "Tip: keep this backup root on an external drive or NAS (hardlinks need one filesystem)."
 }
 
@@ -271,6 +356,19 @@ do_restore() {
     echo "Warning: META stack id may not match ${STACK_ID} — continuing." >&2
   [[ -d "${snap}/files" ]] || { echo "Missing files/ in snapshot" >&2; exit 1; }
 
+  if [[ ! -f "${snap}/nextcloud-db.sql" ]]; then
+    if [[ "${FORCE_FILES_ONLY:-}" == "yes" ]]; then
+      echo "FORCE_FILES_ONLY=yes — restoring files without DB (dangerous)." >&2
+    else
+      echo "Refusing restore: snapshot has no nextcloud-db.sql." >&2
+      echo "A files-only restore can corrupt Nextcloud. Re-run backup on the source, or set FORCE_FILES_ONLY=yes." >&2
+      exit 1
+    fi
+  else
+    verify_mariadb_dump "${snap}/nextcloud-db.sql"
+    verify_dump_checksum "${snap}/nextcloud-db.sql" "${snap}/META.txt"
+  fi
+
   echo
   cat <<'EOF'
 This will REPLACE Nextcloud files and database with the snapshot so a new
@@ -279,6 +377,8 @@ host matches the old environment (then re-scan / repair automatically).
 Recommended on a brand-new machine:
   1) ./install.sh   # pull images / create empty dirs once
   2) ./backup.sh --restore --from /path/to/backups
+
+Import will abort if the SQL load fails — Nextcloud will not be started on a half-restored DB.
 EOF
   read -r -p "Type 'restore' to continue: " confirm || true
   [[ "${confirm}" == "restore" ]] || { echo "Aborted."; exit 1; }
@@ -295,29 +395,39 @@ EOF
   rsync -aH "${snap}/files/" data/html/
 
   if [[ -f "${snap}/nextcloud-db.sql" ]]; then
-    echo "==> Starting MariaDB and importing SQL..."
-    # Fresh DB volume: remove old datadir so passwords in restored .env match
-    if [[ -d data/db ]] && [[ -n "$(ls -A data/db 2>/dev/null || true)" ]]; then
-      echo "    Replacing existing data/db so it matches restored .env passwords..."
-      rm -rf data/db
-      mkdir -p data/db
-    fi
+    echo "==> Rebuilding MariaDB datadir and importing verified SQL dump..."
+    # Always replace datadir so credentials in restored .env match a clean init,
+    # and we never mix an old InnoDB fileset with a logical dump.
+    rm -rf data/db
+    mkdir -p data/db
     compose up -d db
     wait_for_db
-    # Wait for empty DB user grants after first init
-    sleep 3
-    compose exec -T db mariadb \
-      -u"${MYSQL_USER:-nextcloud}" \
-      -p"${MYSQL_PASSWORD}" \
-      "${MYSQL_DATABASE:-nextcloud}" \
-      <"${snap}/nextcloud-db.sql" \
-      || compose exec -T db mariadb \
-           -uroot \
-           -p"${MYSQL_ROOT_PASSWORD}" \
-           "${MYSQL_DATABASE:-nextcloud}" \
-           <"${snap}/nextcloud-db.sql"
-  else
-    echo "Warning: no nextcloud-db.sql in snapshot — files only." >&2
+    # Give first-boot init scripts a moment to create the empty database/user
+    local i ok=0
+    for i in $(seq 1 30); do
+      if compose exec -T db mariadb \
+          -u"${MYSQL_USER:-nextcloud}" \
+          -p"${MYSQL_PASSWORD}" \
+          -e "SELECT 1" "${MYSQL_DATABASE:-nextcloud}" >/dev/null 2>&1; then
+        ok=1
+        break
+      fi
+      sleep 2
+    done
+    [[ "$ok" -eq 1 ]] || {
+      echo "MariaDB user/database not ready for import." >&2
+      exit 1
+    }
+    if ! compose exec -T db mariadb \
+        -u"${MYSQL_USER:-nextcloud}" \
+        -p"${MYSQL_PASSWORD}" \
+        "${MYSQL_DATABASE:-nextcloud}" \
+        <"${snap}/nextcloud-db.sql"; then
+      echo "SQL IMPORT FAILED — not starting Nextcloud. data/db may be partial; fix dump and retry." >&2
+      compose stop db || true
+      exit 1
+    fi
+    echo "    SQL import completed."
   fi
 
   echo "==> Starting full stack..."
