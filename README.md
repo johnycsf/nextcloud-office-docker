@@ -25,9 +25,11 @@ Nextcloud’s docs treat SQLite as testing/minimal only. [MariaDB and PostgreSQL
 
 ## What you need
 
-- Docker with Compose plugin
-- About **3 GiB RAM** free for Collabora in addition to Nextcloud + MariaDB
-- A browser that can reach this machine on ports **80** (Nextcloud) and **9980** (Collabora)
+- A Linux host (Debian/Ubuntu, Fedora/RHEL, Arch, openSUSE, Alpine) or macOS with Homebrew
+- `sudo` so `./install.sh` can install missing tools (Docker, curl, openssl, rsync, …)
+- Enough disk for your data
+
+`./install.sh` detects your OS and installs host dependencies automatically.
 
 ## Install
 

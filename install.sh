@@ -2,6 +2,8 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
+# shellcheck source=deps.sh
+source "${ROOT}/deps.sh"
 # shellcheck source=lib.sh
 source "${ROOT}/lib.sh"
 
@@ -11,8 +13,7 @@ if [[ "${SHOW_HELP}" -eq 1 ]]; then
   exit 0
 fi
 
-need docker
-docker compose version >/dev/null
+ensure_host_deps docker
 
 if [[ ! -f .env ]]; then
   cp .env.example .env
