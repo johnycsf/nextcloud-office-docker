@@ -117,6 +117,10 @@ rm -rf data .env
 | Collabora OOM | Free RAM or raise Docker memory limits |
 | `dbtype` is `sqlite` | Remove `data/` and re-run `./install.sh` so `MYSQL_*` auto-config applies on first install |
 
+## Repository activity
+
+![Repobeats analytics image](https://repobeats.axiom.co/api/embed/555276754948a1ca10af5154e021e18f1b4d4011.svg "Repobeats analytics image")
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
