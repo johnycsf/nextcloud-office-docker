@@ -98,6 +98,8 @@ chmod +x update.sh
 ./update.sh
 ```
 
+Before changing anything, the script writes a timestamped rollback copy under `backups/` and, after a successful update, asks whether to **keep** or **delete** it.
+
 This pulls/rebuilds images, recreates containers as needed, and runs `docker image prune` for **dangling** (untagged) images only — it will not wipe other projects' images or your `data/` volume.
 
 Afterward you can run `./verify-office.sh`. Re-run `./configure-office.sh` only if your LAN IP/hostname changed.
