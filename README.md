@@ -91,17 +91,20 @@ Edit `.env` (from `.env.example`): timezone, ports, hostnames, MariaDB credentia
 
 ## Update
 
-Only for installs that **already** use official Nextcloud + MariaDB from this repo:
+Keep the stack current (safe while running; brief recreate downtime):
 
 ```bash
-./install.sh          # or: ./install.sh --include-redis
-./configure-office.sh
-./verify-office.sh
+chmod +x update.sh
+./update.sh
 ```
+
+This pulls/rebuilds images, recreates containers as needed, and runs `docker image prune` for **dangling** (untagged) images only — it will not wipe other projects' images or your `data/` volume.
+
+Afterward you can run `./verify-office.sh`. Re-run `./configure-office.sh` only if your LAN IP/hostname changed.
 
 Upgrade Nextcloud **one major version at a time**.
 
-If you still run SQLite or LinuxServer volumes, do **not** use the Update steps after a pull — see [BREAKING-CHANGES.md](BREAKING-CHANGES.md).
+SQLite / LinuxServer installs: see [BREAKING-CHANGES.md](BREAKING-CHANGES.md).
 
 ## Uninstall
 
