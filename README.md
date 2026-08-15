@@ -105,6 +105,8 @@ To roll back later:
 ```bash
 chmod +x restore.sh
 ./restore.sh
+# or from an external copy of the backups folder:
+./restore.sh --external /path/to/backups
 ```
 
 This pulls/rebuilds images, recreates containers as needed, and runs `docker image prune` for **dangling** (untagged) images only — it will not wipe other projects' images or your `data/` volume.
