@@ -177,6 +177,10 @@ rm -rf data .env
 | `dbtype` is `sqlite` | Remove `data/` and re-run `./install.sh` so `MYSQL_*` auto-config applies on first install |
 
 
+## Credits
+
+This repo packages or configures upstream software. See [CREDITS.md](CREDITS.md) for the main developers and projects this work builds on.
+
 ## Disclaimer
 
 This project is provided **as is**. The author is **not responsible** for any loss, damage, data corruption, downtime, security issues, or other consequences from using it. Full text: [DISCLAIMER.md](DISCLAIMER.md).
