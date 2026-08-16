@@ -5,8 +5,7 @@ cd "$ROOT"
 # shellcheck source=scripts/lib.sh
 source "${ROOT}/scripts/lib.sh"
 
-need docker
-compose version >/dev/null
+need_container_engine
 load_env
 
 NC_HOST="${NEXTCLOUD_HOST:-$(detect_host_ip)}"

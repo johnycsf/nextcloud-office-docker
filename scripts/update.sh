@@ -136,8 +136,7 @@ create_backup() {
 }
 
 
-need docker
-compose version >/dev/null
+need_container_engine
 
 if [[ ! -f .env ]]; then
   echo "No .env found. Run ./manage.sh first." >&2
@@ -157,7 +156,7 @@ wait_for_redis
 echo "==> Status:"
 compose ps
 echo "==> Removing dangling (untagged) images only — not other projects' images..."
-docker image prune -f
+container_image_prune
 
 echo
 echo "Update finished. Live data/ was left in place (backup is a point-in-time copy)."
