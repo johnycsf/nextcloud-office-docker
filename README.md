@@ -29,7 +29,7 @@ Nextcloud’s docs treat SQLite as testing/minimal only. [MariaDB and PostgreSQL
 - `sudo` so `./install.sh` can install missing tools (Docker, curl, openssl, rsync, …)
 - Enough disk for your data
 
-`./install.sh` detects your OS and installs host dependencies automatically.
+`./install.sh` is interactive (colors + step progress), detects your OS, and installs host dependencies automatically.
 
 ## Install
 

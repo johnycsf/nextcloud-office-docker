@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Install Nextcloud + Collabora + MariaDB with Docker Compose (interactive).
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
@@ -13,11 +14,18 @@ if [[ "${SHOW_HELP}" -eq 1 ]]; then
   exit 0
 fi
 
+ui_banner "Nextcloud + Office" "Docker Compose · official Nextcloud, MariaDB, Collabora"
+ui_steps_init 5
+
+ui_step "Checking host dependencies"
 ensure_host_deps docker
 
+ui_step "Preparing configuration"
 if [[ ! -f .env ]]; then
   cp .env.example .env
-  echo "Created .env from .env.example"
+  ui_ok "Created .env from .env.example"
+else
+  ui_ok "Using existing .env"
 fi
 
 refuse_legacy_nextcloud_data
@@ -32,27 +40,32 @@ if [[ -n "${IP}" ]]; then
     set_env_var ALIASGROUP1 "http://${IP}:80"
     set_env_var COLLABORA_DOMAIN_REGEX "$(escape_regex_dots "$IP")"
     set_env_var COLLABORA_SERVER_NAME "${IP}:${COLLABORA_PORT:-9980}"
-    echo "Detected host IP ${IP} and wrote it into .env (edit if wrong)."
+    ui_ok "Detected host IP ${IP} and wrote it into .env"
   fi
 fi
 
 mkdir -p data/html data/db
-echo "Pulling images (Collabora is large)..."
-compose pull
-compose up -d
 
+ui_step "Pulling images (Collabora is large)"
+ui_run "compose pull" compose pull
+
+ui_step "Starting containers"
+ui_run "compose up -d" compose up -d
+
+ui_step "Waiting for database services"
 wait_for_db
 wait_for_redis
+ui_ok "Database layer is ready"
 
 echo
 if redis_enabled; then
-  echo "Containers are starting with MariaDB + Redis (not SQLite)."
+  ui_ok "Stack: MariaDB + Redis + Nextcloud + Collabora"
 else
-  echo "Containers are starting with MariaDB (not SQLite). Redis skipped (pass --include-redis to enable)."
+  ui_ok "Stack: MariaDB + Nextcloud + Collabora (Redis skipped — pass --include-redis to enable)"
 fi
 load_env
-echo "1) Open http://${NEXTCLOUD_HOST}/"
-echo "2) Create your Nextcloud admin account (database fields are already configured)"
-echo "3) This script will finish Office setup automatically"
+ui_info "1) Open ${UI_BOLD}http://${NEXTCLOUD_HOST}/${UI_RESET}"
+ui_info "2) Create your Nextcloud admin account"
+ui_info "3) Finishing Office setup automatically…"
 echo
 "${ROOT}/configure-office.sh"
