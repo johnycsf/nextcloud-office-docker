@@ -4,6 +4,8 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+# shellcheck source=scripts/deps.sh
+source "${ROOT}/scripts/deps.sh"
 # shellcheck source=scripts/backup-encrypt.sh
 source "${ROOT}/scripts/backup-encrypt.sh"
 # shellcheck source=scripts/lib.sh
@@ -472,7 +474,7 @@ post_restore_nextcloud() {
 do_backup() {
   need_rsync
   need docker
-  docker compose version >/dev/null
+  compose version >/dev/null
   [[ -n "$DEST" ]] || { echo "Provide --dest /path" >&2; exit 1; }
   [[ -f .env ]] || { echo "No .env — run ./manage.sh first." >&2; exit 1; }
   DEST="$(mkdir -p "$DEST" && cd "$DEST" && pwd)"
@@ -559,7 +561,7 @@ EOF
 
 do_restore() {
   need docker
-  docker compose version >/dev/null
+  compose version >/dev/null
   need_rsync
   [[ -n "$FROM" ]] || { echo "Provide --from /path" >&2; exit 1; }
   local snap src
@@ -600,7 +602,7 @@ EOF
   [[ "${confirm}" == "restore" ]] || { echo "Aborted."; exit 1; }
 
   echo "==> Stopping stack..."
-  compose down 2>/dev/null || docker compose down 2>/dev/null || true
+  compose down 2>/dev/null || compose down 2>/dev/null || true
 
   echo "==> Restoring .env and files..."
   [[ -f "${snap}/.env" ]] && cp -a "${snap}/.env" .env

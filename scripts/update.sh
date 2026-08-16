@@ -4,6 +4,8 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+# shellcheck source=scripts/deps.sh
+source "${ROOT}/scripts/deps.sh"
 # shellcheck source=scripts/lib.sh
 source "${ROOT}/scripts/lib.sh"
 
@@ -135,7 +137,7 @@ create_backup() {
 
 
 need docker
-docker compose version >/dev/null
+compose version >/dev/null
 
 if [[ ! -f .env ]]; then
   echo "No .env found. Run ./manage.sh first." >&2

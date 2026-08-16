@@ -6,7 +6,7 @@ cd "$ROOT"
 source "${ROOT}/scripts/lib.sh"
 
 need docker
-docker compose version >/dev/null
+compose version >/dev/null
 load_env
 
 NC_HOST="${NEXTCLOUD_HOST:-$(detect_host_ip)}"

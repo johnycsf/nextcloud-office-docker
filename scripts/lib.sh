@@ -102,7 +102,7 @@ compose() {
   if redis_enabled; then
     files+=(-f docker-compose.redis.yml)
   fi
-  docker compose "${files[@]}" "$@"
+  compose_engine "${files[@]}" "$@"
 }
 
 redis_enabled() {
