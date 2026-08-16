@@ -486,7 +486,7 @@ do_backup() {
   echo "==> DB strategy: logical MariaDB dump (safe). Files use incremental rsync."
   echo "    Never copying live data/db InnoDB files into the snapshot."
 
-  if ! compose ps -q db 2>/dev/null | grep -q .; then
+  if ! compose_service_running db; then
     echo "MariaDB (db) is not running — refusing backup (would risk an incomplete snapshot)." >&2
     rm -rf "${SNAP_DIR}"
     exit 1
@@ -500,7 +500,7 @@ do_backup() {
   trap cleanup_failed_snap EXIT
 
   echo "==> Enabling Nextcloud maintenance mode (no writes during dump/files sync)..."
-  if compose ps -q nextcloud 2>/dev/null | grep -q .; then
+  if compose_service_running nextcloud; then
     occ maintenance:mode --on
   else
     echo "Warning: nextcloud container not running — dumping DB only; files may be stale." >&2
