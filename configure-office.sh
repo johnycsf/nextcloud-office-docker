@@ -26,7 +26,7 @@ fi
 COLLABORA_PUBLIC_URL="http://${CO_HOST}:${CO_PORT}"
 COLLABORA_INTERNAL_URL="http://collabora:9980"
 DOMAIN_REGEX="$(escape_regex_dots "${NC_HOST}")"
-ALIAS="http://${NC_HOST}:80"
+ALIAS="${NC_URL}"
 
 echo "Nextcloud URL           : ${NC_URL}"
 echo "Collabora (browser)    : ${COLLABORA_PUBLIC_URL}"

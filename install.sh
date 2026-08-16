@@ -31,17 +31,21 @@ fi
 refuse_legacy_nextcloud_data
 apply_redis_preference
 ensure_db_passwords
+configure_host_port NEXTCLOUD_PORT "Nextcloud HTTP" 80
+configure_host_port COLLABORA_PORT "Collabora HTTP" 9980
 load_env
 IP="$(detect_host_ip || true)"
 if [[ -n "${IP}" ]]; then
-  if grep -q 'NEXTCLOUD_HOST=192.168.1.50' .env; then
-    set_env_var NEXTCLOUD_HOST "$IP"
-    set_env_var COLLABORA_HOST "$IP"
-    set_env_var ALIASGROUP1 "http://${IP}:80"
-    set_env_var COLLABORA_DOMAIN_REGEX "$(escape_regex_dots "$IP")"
-    set_env_var COLLABORA_SERVER_NAME "${IP}:${COLLABORA_PORT:-9980}"
-    ui_ok "Detected host IP ${IP} and wrote it into .env"
+  set_env_var NEXTCLOUD_HOST "$IP"
+  set_env_var COLLABORA_HOST "$IP"
+  if [[ "${NEXTCLOUD_PORT}" == "80" ]]; then
+    set_env_var ALIASGROUP1 "http://${IP}"
+  else
+    set_env_var ALIASGROUP1 "http://${IP}:${NEXTCLOUD_PORT}"
   fi
+  set_env_var COLLABORA_DOMAIN_REGEX "$(escape_regex_dots "$IP")"
+  set_env_var COLLABORA_SERVER_NAME "${IP}:${COLLABORA_PORT}"
+  ui_ok "Host IP ${IP} + ports written into .env (Nextcloud ${NEXTCLOUD_PORT}, Collabora ${COLLABORA_PORT})"
 fi
 
 mkdir -p data/html data/db
@@ -64,7 +68,11 @@ else
   ui_ok "Stack: MariaDB + Nextcloud + Collabora (Redis skipped — pass --include-redis to enable)"
 fi
 load_env
-ui_info "1) Open ${UI_BOLD}http://${NEXTCLOUD_HOST}/${UI_RESET}"
+if [[ "${NEXTCLOUD_PORT}" == "80" ]]; then
+  ui_info "1) Open ${UI_BOLD}http://${NEXTCLOUD_HOST}/${UI_RESET}"
+else
+  ui_info "1) Open ${UI_BOLD}http://${NEXTCLOUD_HOST}:${NEXTCLOUD_PORT}/${UI_RESET}"
+fi
 ui_info "2) Create your Nextcloud admin account"
 ui_info "3) Finishing Office setup automatically…"
 echo
