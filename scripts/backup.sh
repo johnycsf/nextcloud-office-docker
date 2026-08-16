@@ -610,6 +610,7 @@ EOF
   mkdir -p data/html data/db
   rm -rf data/html
   mkdir -p data/html
+  ensure_host_owned_dir data/html
   echo "==> Restoring files (rsync progress)..."
   rsync -aH --info=progress2 "${snap}/files/" data/html/
 

@@ -58,6 +58,8 @@ ui_run "compose pull" compose pull
 ui_step "Starting containers"
 ui_run "compose up -d" compose up -d
 
+ensure_host_owned_dir data/html data/db
+
 ui_step "Waiting for database services"
 wait_for_db
 wait_for_redis
