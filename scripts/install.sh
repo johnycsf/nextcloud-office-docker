@@ -52,10 +52,10 @@ fi
 mkdir -p data/html data/db
 
 ui_step "Pulling images (Collabora is large)"
-ui_run "compose pull" compose pull
+ui_run --stream "compose pull" compose pull
 
 ui_step "Starting containers"
-ui_run "compose up -d" compose up -d
+ui_run --stream "compose up -d" compose up -d
 
 ensure_host_owned_dir data/html data/db
 
