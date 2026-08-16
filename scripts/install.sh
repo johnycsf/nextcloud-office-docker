@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install Nextcloud + Collabora + MariaDB with Docker Compose (interactive).
+# Install Nextcloud + Collabora + MariaDB with Compose / Docker or Podman (interactive).
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
@@ -14,9 +14,7 @@ if [[ "${SHOW_HELP}" -eq 1 ]]; then
   exit 0
 fi
 
-ui_banner "Nextcloud + Office" "Docker Compose · official Nextcloud, MariaDB, Collabora"
 ui_steps_init 5
-
 ui_step "Preparing configuration"
 if [[ ! -f .env ]]; then
   cp .env.example .env
@@ -29,6 +27,7 @@ refuse_legacy_nextcloud_data
 apply_redis_preference
 ensure_db_passwords
 configure_container_engine
+ui_banner "Nextcloud + Office" "$(compose_stack_subtitle "official Nextcloud, MariaDB, Collabora")"
 
 ui_step "Checking host dependencies"
 ensure_host_deps docker
