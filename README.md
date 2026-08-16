@@ -2,6 +2,9 @@
 
 ![Repobeats analytics image](https://repobeats.axiom.co/api/embed/555276754948a1ca10af5154e021e18f1b4d4011.svg "Repobeats analytics image")
 
+
+[![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/johnycsf)
+
 Deploy [Nextcloud](https://nextcloud.com/) with Docker Compose, including **LibreOffice document editing** via [Collabora Online](https://www.collaboraonline.com/code/).
 
 Uses the **official** [`nextcloud`](https://hub.docker.com/_/nextcloud) image, Collabora’s official [`collabora/code`](https://hub.docker.com/r/collabora/code) image, and **official** [`mariadb:lts`](https://hub.docker.com/_/mariadb) (not SQLite).
@@ -23,6 +26,16 @@ Nextcloud’s docs treat SQLite as testing/minimal only. [MariaDB and PostgreSQL
 
 **+ New → Document / Spreadsheet / Presentation** often appears in Nextcloud but does nothing useful until a separate Collabora Online server is connected. This repo follows [Nextcloud’s recommended approach](https://docs.nextcloud.com/server/latest/admin_manual/office/example-docker.html).
 
+
+## Why this repo (not just another compose file)
+
+- **`./manage.sh`** control center — install, update, backup, status/doctor, uninstall
+- Interactive colored install with step progress
+- Auto-detects your OS and installs missing host tools
+- Safe **`./update.sh`** with automatic pre-update backup
+- Incremental hardlink **`./backup.sh`** + restore
+- **Official upstream images only**
+
 ## What you need
 
 - A Linux host (Debian/Ubuntu, Fedora/RHEL, Arch, openSUSE, Alpine) or macOS with Homebrew
@@ -36,10 +49,10 @@ Nextcloud’s docs treat SQLite as testing/minimal only. [MariaDB and PostgreSQL
 ```bash
 git clone https://github.com/johnycsf/nextcloud-office-docker.git
 cd nextcloud-office-docker
-chmod +x install.sh configure-office.sh verify-office.sh
-./install.sh
-# optional Redis (official caching / file locking):
-# ./install.sh --include-redis
+chmod +x manage.sh install.sh configure-office.sh verify-office.sh
+./manage.sh          # interactive control center
+# or: ./install.sh
+# optional Redis: ./install.sh --include-redis
 ```
 
 The script will:
@@ -167,3 +180,12 @@ rm -rf data .env
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Support this work
+
+If these homelab tools save you time, please consider sponsoring:
+
+[![Sponsor johnycsf](https://img.shields.io/badge/GitHub%20Sponsors-Donate-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/johnycsf)
+
+👉 **[github.com/sponsors/johnycsf](https://github.com/sponsors/johnycsf)** — tips and monthly support keep these beginner-friendly stacks maintained.
+
