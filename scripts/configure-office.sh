@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
-# shellcheck source=lib.sh
-source "${ROOT}/lib.sh"
+# shellcheck source=scripts/lib.sh
+source "${ROOT}/scripts/lib.sh"
 
 need docker
 docker compose version >/dev/null
@@ -50,7 +50,7 @@ for i in $(seq 1 180); do
     break
   fi
   if [[ "$i" -eq 180 ]]; then
-    echo "Timed out. Create the admin account, then re-run ./configure-office.sh" >&2
+    echo "Timed out. Create the admin account, then re-run ./scripts/configure-office.sh" >&2
     exit 1
   fi
   sleep 5

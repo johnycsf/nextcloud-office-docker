@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Install Nextcloud + Collabora + MariaDB with Docker Compose (interactive).
 set -euo pipefail
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
-# shellcheck source=deps.sh
-source "${ROOT}/deps.sh"
-# shellcheck source=lib.sh
-source "${ROOT}/lib.sh"
+# shellcheck source=scripts/deps.sh
+source "${ROOT}/scripts/deps.sh"
+# shellcheck source=scripts/lib.sh
+source "${ROOT}/scripts/lib.sh"
 
 parse_install_args "$@"
 if [[ "${SHOW_HELP}" -eq 1 ]]; then
@@ -76,4 +76,4 @@ fi
 ui_info "2) Create your Nextcloud admin account"
 ui_info "3) Finishing Office setup automatically…"
 echo
-"${ROOT}/configure-office.sh"
+"${ROOT}/scripts/configure-office.sh"

@@ -2,12 +2,12 @@
 # Disaster-recovery backup/restore with incremental rsync snapshots.
 # Restores files + MariaDB and runs Nextcloud occ repair/scan so a fresh host matches the backup.
 set -euo pipefail
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
-# shellcheck source=backup-encrypt.sh
-source "${ROOT}/backup-encrypt.sh"
-# shellcheck source=lib.sh
-source "${ROOT}/lib.sh"
+# shellcheck source=scripts/backup-encrypt.sh
+source "${ROOT}/scripts/backup-encrypt.sh"
+# shellcheck source=scripts/lib.sh
+source "${ROOT}/scripts/lib.sh"
 STACK_ID="nextcloud-office-docker"
 
 need_rsync() {
@@ -20,11 +20,11 @@ need_rsync() {
 usage() {
   cat <<EOF
 Usage:
-  ./backup.sh --dest /path/to/backup-root [--keep N]
-  ./backup.sh --restore --from /path/to/backup-root-or-snapshot
-  ./backup.sh --help
+  ./manage.sh backup --dest /path/to/backup-root [--keep N]
+  ./manage.sh backup --restore --from /path/to/backup-root-or-snapshot
+  ./manage.sh backup --help
 
-Disaster-recovery backups (also used by ./update.sh for pre-update snapshots into ./backups).
+Disaster-recovery backups (also used by ./manage.sh update for pre-update snapshots into ./backups).
 
   --dest DIR    Create a new incremental snapshot under DIR.
                 Uses rsync hardlinks against the previous snapshot so
@@ -50,8 +50,8 @@ Disaster-recovery backups (also used by ./update.sh for pre-update snapshots int
   *.tar.gz.age / *.tar.xz.age / *.tar.age / *.age.
 
 Fresh-machine workflow:
-  1) Install this stack on the new host (./install.sh) so runtime exists.
-  2) ./backup.sh --restore --from /mnt/usb/my-backups
+  1) Install this stack on the new host (./manage.sh) so runtime exists.
+  2) ./manage.sh backup --restore --from /mnt/usb/my-backups
   3) Script replaces data/secrets and finishes app-specific repair (e.g. Nextcloud scan).
 
 Database safety:
@@ -461,11 +461,11 @@ post_restore_nextcloud() {
   }
   echo "==> Scanning app data..."
   occ files:scan-app-data || true
-  if [[ -x "${ROOT}/configure-office.sh" ]]; then
+  if [[ -x "${ROOT}/scripts/configure-office.sh" ]]; then
     echo "==> Re-applying Collabora / trusted domain settings for this host..."
-    "${ROOT}/configure-office.sh" || echo "Warning: configure-office.sh had errors — check Office manually." >&2
+    "${ROOT}/scripts/configure-office.sh" || echo "Warning: configure-office.sh had errors — check Office manually." >&2
   fi
-  echo "==> Optional verify: ./verify-office.sh"
+  echo "==> Optional verify: ./scripts/verify-office.sh"
 }
 
 
@@ -474,7 +474,7 @@ do_backup() {
   need docker
   docker compose version >/dev/null
   [[ -n "$DEST" ]] || { echo "Provide --dest /path" >&2; exit 1; }
-  [[ -f .env ]] || { echo "No .env — run ./install.sh first." >&2; exit 1; }
+  [[ -f .env ]] || { echo "No .env — run ./manage.sh first." >&2; exit 1; }
   DEST="$(mkdir -p "$DEST" && cd "$DEST" && pwd)"
   load_env
   prepare_snapshot_dirs "$DEST"
@@ -591,8 +591,8 @@ This will REPLACE Nextcloud files and database with the snapshot so a new
 host matches the old environment (then re-scan / repair automatically).
 
 Recommended on a brand-new machine:
-  1) ./install.sh   # pull images / create empty dirs once
-  2) ./backup.sh --restore --from /path/to/backups
+  1) ./manage.sh   # pull images / create empty dirs once
+  2) ./manage.sh backup --restore --from /path/to/backups
 
 Import will abort if the SQL load fails — Nextcloud will not be started on a half-restored DB.
 EOF

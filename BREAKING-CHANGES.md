@@ -19,10 +19,10 @@ Nextcloud does **not** auto-convert SQLite → MariaDB. Treat MariaDB as a **new
 
 1. **Do nothing** after `git pull` — keep serving the old compose revision.
 2. Or pin the last working commit.
-3. Or migrate deliberately: backup `data/`, move it aside, run a fresh `./install.sh`, restore files into the new instance if needed.
+3. Or migrate deliberately: backup `data/`, move it aside, run a fresh `./manage.sh`, restore files into the new instance if needed.
 
 `install.sh` refuses when it detects LinuxServer or SQLite data, unless:
 
 ```bash
-I_UNDERSTAND_THIS_IS_A_FRESH_INSTALL=yes ./install.sh
+I_UNDERSTAND_THIS_IS_A_FRESH_INSTALL=yes ./manage.sh install
 ```

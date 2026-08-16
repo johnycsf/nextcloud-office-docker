@@ -78,7 +78,7 @@ Options:
   1) Keep your current containers running (do nothing).
   2) Backup, move data/ aside, install fresh on MariaDB.
   3) Only if you accept a fresh install:
-       I_UNDERSTAND_THIS_IS_A_FRESH_INSTALL=yes ./install.sh
+       I_UNDERSTAND_THIS_IS_A_FRESH_INSTALL=yes ./manage.sh install
 EOF
     exit 1
   fi
@@ -120,7 +120,7 @@ parse_install_args() {
       -h|--help) SHOW_HELP=1 ;;
       *)
         echo "Unknown option: ${arg}" >&2
-        echo "Usage: ./install.sh [--include-redis]" >&2
+        echo "Usage: ./manage.sh [--include-redis]" >&2
         exit 1
         ;;
     esac
@@ -129,14 +129,14 @@ parse_install_args() {
 
 print_install_help() {
   cat <<'EOF'
-Usage: ./install.sh [--include-redis]
+Usage: ./manage.sh [--include-redis]
 
   --include-redis   Also start official redis:alpine and set REDIS_HOST for Nextcloud
             (caching / transactional file locking). Optional; MariaDB is always used.
 
 Examples:
-  ./install.sh
-  ./install.sh --include-redis
+  ./manage.sh
+  ./manage.sh install --include-redis
 EOF
 }
 

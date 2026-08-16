@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
-# shellcheck source=lib.sh
-source "${ROOT}/lib.sh"
+# shellcheck source=scripts/lib.sh
+source "${ROOT}/scripts/lib.sh"
 
 need docker
 load_env
@@ -66,10 +66,10 @@ if redis_enabled; then
   if compose exec -T nextcloud /bin/sh -c 'printenv REDIS_HOST' 2>/dev/null | grep -qx 'redis'; then
     pass "Nextcloud has REDIS_HOST=redis"
   else
-    fail "Nextcloud REDIS_HOST is not redis — recreate with ./install.sh --include-redis"
+    fail "Nextcloud REDIS_HOST is not redis — recreate with ./manage.sh install --include-redis"
   fi
 else
-  pass "Redis not enabled (optional; use ./install.sh --include-redis)"
+  pass "Redis not enabled (optional; use ./manage.sh install --include-redis)"
 fi
 
 WOPI="$(occ config:app:get richdocuments wopi_url 2>/dev/null || true)"
@@ -82,5 +82,5 @@ if [[ "$FAIL" -eq 0 ]]; then
   echo "All checks passed. Manual check: open ${NC_URL} → + New → Document"
   exit 0
 fi
-echo "One or more checks failed. Re-run ./configure-office.sh" >&2
+echo "One or more checks failed. Re-run ./scripts/configure-office.sh" >&2
 exit 1
