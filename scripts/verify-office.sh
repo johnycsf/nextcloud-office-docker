@@ -5,7 +5,7 @@ cd "$ROOT"
 # shellcheck source=scripts/lib.sh
 source "${ROOT}/scripts/lib.sh"
 
-need docker
+need_container_engine
 load_env
 
 FAIL=0

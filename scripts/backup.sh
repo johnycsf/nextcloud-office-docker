@@ -473,7 +473,7 @@ post_restore_nextcloud() {
 
 do_backup() {
   need_rsync
-  need docker
+  need_container_engine
   compose version >/dev/null
   [[ -n "$DEST" ]] || { echo "Provide --dest /path" >&2; exit 1; }
   [[ -f .env ]] || { echo "No .env — run ./manage.sh first." >&2; exit 1; }
@@ -560,7 +560,7 @@ EOF
 }
 
 do_restore() {
-  need docker
+  need_container_engine
   compose version >/dev/null
   need_rsync
   [[ -n "$FROM" ]] || { echo "Provide --from /path" >&2; exit 1; }
@@ -604,8 +604,12 @@ EOF
   echo "==> Stopping stack..."
   compose down 2>/dev/null || compose down 2>/dev/null || true
 
+  save_host_install_env
   echo "==> Restoring .env and files..."
   [[ -f "${snap}/.env" ]] && cp -a "${snap}/.env" .env
+  # shellcheck disable=SC1091
+  set -a; [[ -f .env ]] && source .env; set +a
+  apply_host_install_env
   load_env
   mkdir -p data/html data/db
   rm -rf data/html
