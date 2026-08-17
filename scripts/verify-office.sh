@@ -2,6 +2,8 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+# shellcheck source=scripts/deps.sh
+source "${ROOT}/scripts/deps.sh"
 # shellcheck source=scripts/lib.sh
 source "${ROOT}/scripts/lib.sh"
 
@@ -16,7 +18,7 @@ echo "=== Office verification ==="
 
 NC_HOST="${NEXTCLOUD_HOST:-}"
 CO_HOST="${COLLABORA_HOST:-$NC_HOST}"
-NC_PORT="${NEXTCLOUD_PORT:-80}"
+NC_PORT="${NEXTCLOUD_PORT:-8082}"
 CO_PORT="${COLLABORA_PORT:-9980}"
 COLLABORA_PUBLIC_URL="http://${CO_HOST}:${CO_PORT}"
 COLLABORA_INTERNAL_URL="http://collabora:9980"
@@ -47,7 +49,7 @@ DBTYPE="$(occ config:system:get dbtype 2>/dev/null || true)"
 if [[ "${DBTYPE}" == "mysql" ]]; then
   pass "Database is MariaDB/MySQL (dbtype=${DBTYPE})"
 else
-  fail "Expected MariaDB/MySQL (dbtype=mysql), got: ${DBTYPE:-empty} — use a fresh data/ volume with MYSQL_* set"
+  fail "Expected MariaDB/MySQL (dbtype=mysql), got: ${DBTYPE:-empty} - use a fresh data/ volume with MYSQL_* set"
 fi
 
 if compose exec -T db healthcheck.sh --connect --innodb_initialized >/dev/null 2>&1; then
@@ -66,7 +68,7 @@ if redis_enabled; then
   if compose exec -T nextcloud /bin/sh -c 'printenv REDIS_HOST' 2>/dev/null | grep -qx 'redis'; then
     pass "Nextcloud has REDIS_HOST=redis"
   else
-    fail "Nextcloud REDIS_HOST is not redis — recreate with ./manage.sh install --include-redis"
+    fail "Nextcloud REDIS_HOST is not redis - recreate with ./manage.sh install --include-redis"
   fi
 else
   pass "Redis not enabled (optional; use ./manage.sh install --include-redis)"
@@ -79,7 +81,7 @@ PUB="$(occ config:app:get richdocuments public_wopi_url 2>/dev/null || true)"
 
 echo
 if [[ "$FAIL" -eq 0 ]]; then
-  echo "All checks passed. Manual check: open ${NC_URL} → + New → Document"
+  echo "All checks passed. Manual check: open ${NC_URL} -> + New -> Document"
   exit 0
 fi
 echo "One or more checks failed. Re-run ./scripts/configure-office.sh" >&2

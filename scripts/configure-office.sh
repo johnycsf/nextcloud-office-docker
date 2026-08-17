@@ -2,6 +2,8 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+# shellcheck source=scripts/deps.sh
+source "${ROOT}/scripts/deps.sh"
 # shellcheck source=scripts/lib.sh
 source "${ROOT}/scripts/lib.sh"
 
@@ -10,7 +12,7 @@ load_env
 
 NC_HOST="${NEXTCLOUD_HOST:-$(detect_host_ip)}"
 CO_HOST="${COLLABORA_HOST:-$NC_HOST}"
-NC_PORT="${NEXTCLOUD_PORT:-80}"
+NC_PORT="${NEXTCLOUD_PORT:-8082}"
 CO_PORT="${COLLABORA_PORT:-9980}"
 
 if [[ -z "${NC_HOST}" ]]; then
@@ -42,7 +44,7 @@ compose up -d collabora
 
 echo "Waiting until Nextcloud setup wizard is finished..."
 echo "Open: ${NC_URL}"
-echo "(Database is MariaDB — create the admin account only; DB fields are auto-configured.)"
+echo "(Database is MariaDB - create the admin account only; DB fields are auto-configured.)"
 for i in $(seq 1 180); do
   if occ status 2>/dev/null | grep -q 'installed: true'; then
     echo "Nextcloud is installed."
@@ -72,7 +74,7 @@ occ config:app:set richdocuments disable_certificate_verification --type=string 
 occ config:app:set richdocuments wopi_allowlist --value="0.0.0.0/0,::/0"
 occ richdocuments:activate-config >/dev/null 2>&1 || true
 
-"${ROOT}/verify-office.sh"
+"${ROOT}/scripts/verify-office.sh"
 
 cat <<MSG
 
@@ -81,6 +83,6 @@ Office editing is configured.
 Nextcloud:  ${NC_URL}
 Collabora:  ${COLLABORA_PUBLIC_URL}/hosting/discovery
 
-Try: + New → Document / Spreadsheet / Presentation
+Try: + New -> Document / Spreadsheet / Presentation
 
 MSG

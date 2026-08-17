@@ -24,6 +24,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/) where tagged releases exist.
 
 ## [Unreleased]
+- Fix rootless Podman host-port remap writing the notice text into `.env` instead of the port number.
+- Fix `ensure_host_owned_dir` silently skipping ownership repair when nested files were wrong (`find|head` SIGPIPE under `pipefail`).
+- Shell scripts are now pure ASCII; displayed glyphs come from `$'\uXXXX'` constants so editors cannot corrupt the UI. Terminal output is unchanged.
+- Fix `compose_service_running` matching containers by the compose `working_dir` label, so backups work when the repo is cloned under a different directory name.
+- Stop chowning `data/db` after start; under rootless Podman it stopped MariaDB writing and hung `wait_for_db`.
+- `configure-office.sh` and `verify-office.sh` now source `deps.sh`, which defines `need_container_engine`/`compose_engine`; Office setup previously failed on both Docker and Podman.
+- Fix `configure-office.sh` calling `verify-office.sh` at the repo root instead of `scripts/`.
+- Default `NEXTCLOUD_PORT` is now **8082** (was 80): no longer collides with Heimdall and is bindable by rootless Podman. Existing `.env` values are kept.
+- Refuse a host port another stack beside this one already claims in its `.env` (catches installed-but-stopped stacks) and offer the next free port.
 - Rootless Podman: remap privileged host ports (e.g. 80) to unprivileged defaults (8080) so install can bind.
 - Document batching related fixes into one `testing` → `main` PR (avoid one-PR-per-microfix).
 - Fix Podman backup/status: detect running services without `compose ps -q SERVICE` (unsupported by podman-compose).
