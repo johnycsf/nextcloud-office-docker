@@ -65,7 +65,7 @@ ask_backup_retention() {
     return 0
   fi
   if [[ ! -t 0 ]]; then
-    echo "No interactive terminal — keeping backup at ${dir}"
+    echo "No interactive terminal - keeping backup at ${dir}"
     local keep="${DEFAULT_KEEP}"
     [[ -f "${KEEP_FILE}" ]] && keep="$(tr -dc '0-9' <"${KEEP_FILE}" || true)"
     [[ -z "${keep}" ]] && keep="${DEFAULT_KEEP}"
@@ -155,7 +155,7 @@ wait_for_db
 wait_for_redis
 echo "==> Status:"
 compose ps
-echo "==> Removing dangling (untagged) images only — not other projects' images..."
+echo "==> Removing dangling (untagged) images only - not other projects' images..."
 container_image_prune
 
 echo

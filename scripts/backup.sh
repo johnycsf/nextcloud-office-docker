@@ -38,12 +38,12 @@ Disaster-recovery backups (also used by ./manage.sh update for pre-update snapsh
   --archive FMT      After snapshot, also write a compressed export (tar.gz|tar.xz|zip).
                      Local hardlink snapshots stay uncompressed for --link-dest.
   --archive-password Password-protect that archive:
-                       zip   → zip -e (ZipCrypto; casual protection)
-                       tar.* → compress then age -p (strong passphrase)
+                       zip   -> zip -e (ZipCrypto; casual protection)
+                       tar.* -> compress then age -p (strong passphrase)
   --encrypt          Advanced: age-encrypted .tar.age export (recipient key).
   --export-dir DIR   Where to put exports (default: DEST/exports for --archive,
                      DEST/encrypted for --encrypt).
-  --age-recipient R  age1… public key or path to recipients file (repeatable).
+  --age-recipient R  age1... public key or path to recipients file (repeatable).
   --age-identity F   Private key file for decrypt (default: ~/.config/johnycsf/backup.age.key).
   --passphrase       With --encrypt: age -p instead of a recipient key.
 
@@ -57,8 +57,8 @@ Fresh-machine workflow:
   3) Script replaces data/secrets and finishes app-specific repair (e.g. Nextcloud scan).
 
 Database safety:
-  MariaDB/Nextcloud  — logical dump (--single-transaction), never live datadir copy.
-  SQLite apps       — service stopped/scaled down, WAL checkpoint, then file copy.
+  MariaDB/Nextcloud  - logical dump (--single-transaction), never live datadir copy.
+  SQLite apps       - service stopped/scaled down, WAL checkpoint, then file copy.
   Incremental rsync applies to files; each MariaDB dump is a full verified SQL file.
 EOF
 }
@@ -236,7 +236,7 @@ verify_mariadb_dump() {
     return 1
   fi
   if ! grep -qE 'CREATE TABLE|INSERT INTO' "$f"; then
-    echo "SQL dump has no CREATE TABLE/INSERT INTO — refusing: $f" >&2
+    echo "SQL dump has no CREATE TABLE/INSERT INTO - refusing: $f" >&2
     return 1
   fi
   local bytes
@@ -263,7 +263,7 @@ seal_snapshot() {
   local snap="$1"
   echo "==> Sealing snapshot with SHA256 manifests..."
   if ! command -v sha256sum >/dev/null 2>&1 && ! command -v shasum >/dev/null 2>&1; then
-    echo "WARNING: sha256sum/shasum not found — snapshot will lack integrity key." >&2
+    echo "WARNING: sha256sum/shasum not found - snapshot will lack integrity key." >&2
     return 0
   fi
   (
@@ -306,12 +306,12 @@ verify_snapshot_integrity() {
   local warn=0
   echo "==> Checking snapshot integrity (SHA256)..."
   if [[ ! -f "${snap}/SHA256SUMS" ]]; then
-    echo "WARNING: No SHA256SUMS manifest — cannot verify integrity (legacy or incomplete backup)." >&2
+    echo "WARNING: No SHA256SUMS manifest - cannot verify integrity (legacy or incomplete backup)." >&2
     echo "         Restore will continue, but corruption cannot be ruled out." >&2
     return 0
   fi
   if ! command -v sha256sum >/dev/null 2>&1; then
-    echo "WARNING: sha256sum not found — skipping per-file check." >&2
+    echo "WARNING: sha256sum not found - skipping per-file check." >&2
     warn=1
   else
     local out
@@ -320,7 +320,7 @@ verify_snapshot_integrity() {
     local rc=$?
     set -e
     if [[ "$rc" -ne 0 ]]; then
-      echo "WARNING: SHA256 file verification FAILED — integrity is lost; restore may cause issues." >&2
+      echo "WARNING: SHA256 file verification FAILED - integrity is lost; restore may cause issues." >&2
       printf '%s
 ' "$out" | grep -v ': OK$' | head -n 40 >&2 || true
       warn=1
@@ -333,7 +333,7 @@ verify_snapshot_integrity() {
     echo "WARNING: META.txt has no snapshot_sha256 key." >&2
     warn=1
   elif [[ "$actual" != "$expected" ]]; then
-    echo "WARNING: SHA256SUMS does not match META snapshot_sha256 — integrity is lost; restore may cause issues." >&2
+    echo "WARNING: SHA256SUMS does not match META snapshot_sha256 - integrity is lost; restore may cause issues." >&2
     echo "         expected=${expected}" >&2
     echo "         actual=${actual}" >&2
     warn=1
@@ -414,7 +414,7 @@ occ_files_scan_with_progress() {
   if (( total > 0 )); then
     echo "    Estimated entries under data/: ${total}"
   else
-    echo "    Could not pre-count entries — showing per-user progress when available."
+    echo "    Could not pre-count entries - showing per-user progress when available."
   fi
   print_scan_pct "$label" 0 "$total"
 
@@ -459,13 +459,13 @@ post_restore_nextcloud() {
   occ db:add-missing-primary-keys || true
   occ maintenance:repair --include-expensive || true
   occ_files_scan_with_progress "files:scan" files:scan --all || {
-    echo "WARNING: files:scan reported an error — check output above." >&2
+    echo "WARNING: files:scan reported an error - check output above." >&2
   }
   echo "==> Scanning app data..."
   occ files:scan-app-data || true
   if [[ -x "${ROOT}/scripts/configure-office.sh" ]]; then
     echo "==> Re-applying Collabora / trusted domain settings for this host..."
-    "${ROOT}/scripts/configure-office.sh" || echo "Warning: configure-office.sh had errors — check Office manually." >&2
+    "${ROOT}/scripts/configure-office.sh" || echo "Warning: configure-office.sh had errors - check Office manually." >&2
   fi
   echo "==> Optional verify: ./scripts/verify-office.sh"
 }
@@ -476,7 +476,7 @@ do_backup() {
   need_container_engine
   compose version >/dev/null
   [[ -n "$DEST" ]] || { echo "Provide --dest /path" >&2; exit 1; }
-  [[ -f .env ]] || { echo "No .env — run ./manage.sh first." >&2; exit 1; }
+  [[ -f .env ]] || { echo "No .env - run ./manage.sh first." >&2; exit 1; }
   DEST="$(resolve_stack_backup_dest "${STACK_ID}" "${DEST}")"
   DEST="$(mkdir -p "$DEST" && cd "$DEST" && pwd)"
   echo "==> Stack backup root: ${DEST}"
@@ -487,7 +487,7 @@ do_backup() {
   echo "    Never copying live data/db InnoDB files into the snapshot."
 
   if ! compose_service_running db; then
-    echo "MariaDB (db) is not running — refusing backup (would risk an incomplete snapshot)." >&2
+    echo "MariaDB (db) is not running - refusing backup (would risk an incomplete snapshot)." >&2
     rm -rf "${SNAP_DIR}"
     exit 1
   fi
@@ -503,7 +503,7 @@ do_backup() {
   if compose_service_running nextcloud; then
     occ maintenance:mode --on
   else
-    echo "Warning: nextcloud container not running — dumping DB only; files may be stale." >&2
+    echo "Warning: nextcloud container not running - dumping DB only; files may be stale." >&2
   fi
 
   echo "==> Dumping MariaDB with a consistent InnoDB snapshot..."
@@ -531,7 +531,7 @@ do_backup() {
   if [[ -d data/html ]]; then
     rsync_incremental "data/html" "${SNAP_DIR}/files" "${prev_files}"
   else
-    echo "data/html missing — refusing incomplete backup." >&2
+    echo "data/html missing - refusing incomplete backup." >&2
     exit 1
   fi
 
@@ -574,12 +574,12 @@ do_restore() {
   echo "Restoring from: $snap"
   verify_snapshot_integrity "$snap"
   grep -q "stack=${STACK_ID}" "${snap}/META.txt" 2>/dev/null || \
-    echo "Warning: META stack id may not match ${STACK_ID} — continuing." >&2
+    echo "Warning: META stack id may not match ${STACK_ID} - continuing." >&2
   [[ -d "${snap}/files" ]] || { echo "Missing files/ in snapshot" >&2; exit 1; }
 
   if [[ ! -f "${snap}/nextcloud-db.sql" ]]; then
     if [[ "${FORCE_FILES_ONLY:-}" == "yes" ]]; then
-      echo "FORCE_FILES_ONLY=yes — restoring files without DB (dangerous)." >&2
+      echo "FORCE_FILES_ONLY=yes - restoring files without DB (dangerous)." >&2
     else
       echo "Refusing restore: snapshot has no nextcloud-db.sql." >&2
       echo "A files-only restore can corrupt Nextcloud. Re-run backup on the source, or set FORCE_FILES_ONLY=yes." >&2
@@ -599,7 +599,7 @@ Recommended on a brand-new machine:
   1) ./manage.sh   # pull images / create empty dirs once
   2) ./manage.sh backup --restore --from /path/to/backups
 
-Import will abort if the SQL load fails — Nextcloud will not be started on a half-restored DB.
+Import will abort if the SQL load fails - Nextcloud will not be started on a half-restored DB.
 EOF
   read -r -p "Type 'restore' to continue: " confirm || true
   [[ "${confirm}" == "restore" ]] || { echo "Aborted."; exit 1; }
@@ -650,7 +650,7 @@ EOF
         -p"${MYSQL_PASSWORD}" \
         "${MYSQL_DATABASE:-nextcloud}" \
         <"${snap}/nextcloud-db.sql"; then
-      echo "SQL IMPORT FAILED — not starting Nextcloud. data/db may be partial; fix dump and retry." >&2
+      echo "SQL IMPORT FAILED - not starting Nextcloud. data/db may be partial; fix dump and retry." >&2
       compose stop db || true
       exit 1
     fi

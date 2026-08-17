@@ -48,11 +48,11 @@ ensure_db_passwords() {
 
 refuse_legacy_nextcloud_data() {
   if [[ "${I_UNDERSTAND_THIS_IS_A_FRESH_INSTALL:-}" == "yes" ]]; then
-    echo "Override set: I_UNDERSTAND_THIS_IS_A_FRESH_INSTALL=yes — continuing."
+    echo "Override set: I_UNDERSTAND_THIS_IS_A_FRESH_INSTALL=yes - continuing."
     return 0
   fi
   local reason=""
-  # LinuxServer Nextcloud often used ./data/config → /config
+  # LinuxServer Nextcloud often used ./data/config -> /config
   if [[ -d data/config/www ]] || [[ -f data/config/www/index.php ]] || [[ -d data/config/nginx ]]; then
     reason="LinuxServer-style Nextcloud data under data/config/"
   fi

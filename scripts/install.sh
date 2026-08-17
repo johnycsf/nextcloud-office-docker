@@ -32,7 +32,7 @@ ui_banner "Nextcloud + Office" "$(compose_stack_subtitle "official Nextcloud, Ma
 ui_step "Checking host dependencies"
 ensure_host_deps docker
 
-configure_host_port NEXTCLOUD_PORT "Nextcloud HTTP" 80
+configure_host_port NEXTCLOUD_PORT "Nextcloud HTTP" 8082
 configure_host_port COLLABORA_PORT "Collabora HTTP" 9980
 load_env
 IP="$(detect_host_ip || true)"
@@ -57,7 +57,10 @@ ui_run --stream "compose pull" compose pull
 ui_step "Starting containers"
 ui_run --stream "compose up -d" compose up -d
 
-ensure_host_owned_dir data/html data/db
+# Never touch data/db after start: MariaDB writes as its own container UID, which
+# maps to a subuid under rootless Podman, so chowning it to the login user stops
+# mysqld from writing and wait_for_db then hangs.
+ensure_host_owned_dir data/html
 
 ui_step "Waiting for database services"
 wait_for_db
@@ -68,7 +71,7 @@ echo
 if redis_enabled; then
   ui_ok "Stack: MariaDB + Redis + Nextcloud + Collabora"
 else
-  ui_ok "Stack: MariaDB + Nextcloud + Collabora (Redis skipped — pass --include-redis to enable)"
+  ui_ok "Stack: MariaDB + Nextcloud + Collabora (Redis skipped - pass --include-redis to enable)"
 fi
 load_env
 if [[ "${NEXTCLOUD_PORT}" == "80" ]]; then
@@ -77,6 +80,6 @@ else
   ui_info "1) Open ${UI_BOLD}http://${NEXTCLOUD_HOST}:${NEXTCLOUD_PORT}/${UI_RESET}"
 fi
 ui_info "2) Create your Nextcloud admin account"
-ui_info "3) Finishing Office setup automatically…"
+ui_info "3) Finishing Office setup automatically..."
 echo
 "${ROOT}/scripts/configure-office.sh"
