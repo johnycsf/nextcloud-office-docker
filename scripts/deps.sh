@@ -463,6 +463,16 @@ _firewall_open_ufw() {
   ui_info "Run: sudo ufw allow ${port}/tcp"
 }
 
+ensure_sudo_cached() {
+  # Attempt to cache sudo credentials up-front to avoid repeated password prompts.
+  if command -v sudo >/dev/null 2>&1 && [[ -t 0 ]] && [[ "${SKIP_SUDO_PROMPT:-}" != "1" ]]; then
+    ui_info "Requesting sudo to cache credentials (may prompt)."
+    if ! sudo -v 2>/dev/null; then
+      ui_warn "sudo not available or authentication failed; operations may prompt later."
+    fi
+  fi
+}
+
 ensure_host_firewall_tcp_port() {
   # Open the TCP port on whichever host firewall is active. Rootless Podman does
   # not auto-open host firewall ports the way Docker often does - without this
@@ -470,6 +480,7 @@ ensure_host_firewall_tcp_port() {
   # which reads as a failed install.
   local port="$1"
   [[ -n "${port}" ]] || return 0
+  ensure_sudo_cached
   local backend
   backend="$(host_firewall_backend)"
   case "${backend}" in
@@ -490,6 +501,15 @@ ensure_host_firewall_tcp_port() {
         ui_info "Attempting: sudo nft add rule inet filter input tcp dport ${port} accept"
         if sudo nft add rule inet filter input tcp dport "${port}" accept >/dev/null 2>&1; then
           ui_ok "Opened ${port}/tcp via nft (temporary)."
+          ui_ask_yn _persist "Make nft rule persistent across reboots (save to /etc/nftables.conf)?" n
+          if [[ "${_persist}" == "y" ]]; then
+            ui_info "Saving nft ruleset to /etc/nftables.conf (may require sudo)."
+            if sudo sh -c 'cp -n /etc/nftables.conf /etc/nftables.conf.bak 2>/dev/null || true' && sudo sh -c 'nft list ruleset > /etc/nftables.conf' >/dev/null 2>&1; then
+              ui_ok "Saved nft ruleset to /etc/nftables.conf"
+            else
+              ui_err "Failed to save nft ruleset. To persist manually run: sudo nft list ruleset > /etc/nftables.conf"
+            fi
+          fi
           return 0
         fi
       fi
@@ -497,6 +517,15 @@ ensure_host_firewall_tcp_port() {
         ui_info "Attempting: sudo iptables -I INPUT -p tcp --dport ${port} -j ACCEPT"
         if sudo iptables -I INPUT -p tcp --dport "${port}" -j ACCEPT >/dev/null 2>&1; then
           ui_ok "Opened ${port}/tcp via iptables (temporary)."
+          ui_ask_yn _persist_ip "Make iptables rule persistent across reboots (save to /etc/iptables/rules.v4)?" n
+          if [[ "${_persist_ip}" == "y" ]]; then
+            ui_info "Saving iptables rules to /etc/iptables/rules.v4 (may require sudo)."
+            if sudo mkdir -p /etc/iptables 2>/dev/null || true && sudo sh -c 'iptables-save > /etc/iptables/rules.v4' >/dev/null 2>&1; then
+              ui_ok "Saved iptables rules to /etc/iptables/rules.v4"
+            else
+              ui_err "Failed to save iptables rules. To persist manually run: sudo iptables-save > /etc/iptables/rules.v4"
+            fi
+          fi
           return 0
         fi
       fi
@@ -1910,6 +1939,7 @@ uninstall_docker_stack() {
   local title="$1"
   load_container_engine
   ui_banner "${title}" "Uninstall ${UI_SYM_DOT} $(container_engine_label)"
+  ensure_sudo_cached
   ui_warn "This stops containers. You choose whether to delete ./data"
   confirm_destructive "uninstall" || { ui_info "Cancelled."; return 1; }
 
