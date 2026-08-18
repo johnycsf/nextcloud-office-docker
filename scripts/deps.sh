@@ -2079,42 +2079,87 @@ remove_host_firewall_tcp_port() {
 delete_images_used_by_compose() {
   ensure_sudo_cached
   load_container_engine
-  local files=("${ROOT}/docker-compose.yml" "${ROOT}/compose.yaml" "${ROOT}/docker-compose.yaml" "${ROOT}/compose.yml")
-  local imgs=() f matches line value
-  for f in "${files[@]}"; do
-    [[ -f "${f}" ]] || continue
-    while IFS= read -r matches; do
-      line="${matches#*:}"
-      value=$(echo "${line}" | sed -E "s/^[[:space:]]*image:[[:space:]]*//; s/[\\\"']//g" | sed 's/^ *//; s/ *$//')
-      if [[ -z "${value}" ]]; then
-        continue
-      fi
-      # skip templated values
-      if [[ "${value}" == *'${IMAGE_REGISTRY'* || "${value}" == *'${'* ]]; then
-        ui_info "Skipping templated image entry: ${value}"
-        continue
+  local imgs=() f value
+
+  # Prefer resolved compose config (interpolates .env) when available so
+  # templated entries like ${IMAGE_REGISTRY:-docker.io}/nextcloud are expanded.
+  if compose config >/dev/null 2>&1; then
+    while IFS= read -r value; do
+      # strip surrounding quotes and whitespace
+      value="$(printf '%s' "${value}" | sed "s/[\"']//g" | sed 's/^ *//; s/ *$//')"
+      [[ -n "${value}" ]] || continue
+      # If templated, try to resolve IMAGE_REGISTRY from .env then skip if still templated
+      if [[ "${value}" == *'${'* ]]; then
+        if [[ "${value}" == *'IMAGE_REGISTRY'* ]]; then
+          reg="$(env_file_get IMAGE_REGISTRY docker.io "${ROOT}/.env" 2>/dev/null || true)"
+          if [[ -z "${reg}" ]]; then reg=docker.io; fi
+          value="${value//\${IMAGE_REGISTRY:-docker.io}/${reg}}"
+          value="${value//\${IMAGE_REGISTRY}/${reg}}"
+        fi
+        if [[ "${value}" == *'${'* ]]; then
+          ui_info "Skipping templated image entry: ${value}"
+          continue
+        fi
       fi
       imgs+=("${value}")
-    done < <(grep -n -E '^[[:space:]]*image[[:space:]]*:' "${f}" || true)
+    done < <(compose config 2>/dev/null | sed -n -e 's/^[[:space:]]*image:[[:space:]]*//p')
+  else
+    # Fallback: parse files directly (older environments)
+    for f in "${ROOT}/docker-compose.yml" "${ROOT}/compose.yaml" "${ROOT}/docker-compose.yaml" "${ROOT}/compose.yml"; do
+      [[ -f "${f}" ]] || continue
+      while IFS= read -r matches; do
+        line="${matches#*:}"
+        # strip image: prefix, remove quotes, trim
+        value=$(echo "${line}" | sed -E 's/^[[:space:]]*image:[[:space:]]*//' | sed "s/[\"']//g" | sed 's/^ *//; s/ *$//')
+        [[ -n "${value}" ]] || continue
+        if [[ "${value}" == *'${'* ]]; then
+          # Try to resolve IMAGE_REGISTRY from .env or default to docker.io
+          if [[ "${value}" == *'IMAGE_REGISTRY'* ]]; then
+            reg="$(env_file_get IMAGE_REGISTRY docker.io "${ROOT}/.env" 2>/dev/null || true)"
+            if [[ -z "${reg}" ]]; then reg=docker.io; fi
+            # Replace common parameter forms
+            value="$(printf '%s' "${value}" | awk -v r="${reg}" '{gsub(/\$\{IMAGE_REGISTRY:-docker.io\}/,r); gsub(/\$\{IMAGE_REGISTRY\}/,r); print}')"
+            value="$(printf '%s' "${value}" | awk -v r="${reg}" '{gsub(/\$\{IMAGE_REGISTRY\}/,r); print}')"
+          fi
+          # If still templated, skip
+          if [[ "${value}" == *'${'* ]]; then
+            ui_info "Skipping templated image entry: ${value}"
+            continue
+          fi
+        fi
+        imgs+=("${value}")
+      done < <(grep -n -E '^[[:space:]]*image[[:space:]]*:' "${f}" || true)
+    done
+  fi
+
+  local uniq=()
+  for value in "${imgs[@]}"; do
+    if [[ " ${uniq[*]} " != *" ${value} "* ]]; then
+      uniq+=("${value}")
+    fi
   done
-  if [[ ${#imgs[@]} -eq 0 ]]; then
+  if [[ ${#uniq[@]} -eq 0 ]]; then
     ui_info "No explicit image entries found in compose files to remove (or entries are templated)."
     return 0
   fi
-  ui_info "Images to delete: ${imgs[*]}"
+
+  ui_info "Images to delete: ${uniq[*]}"
+  if [[ "${DRY_RUN:-}" == "1" ]]; then
+    ui_info "Dry-run enabled: not removing images."
+    return 0
+  fi
   case "${CONTAINER_ENGINE}" in
     podman)
-      for value in "${imgs[@]}"; do
+      for value in "${uniq[@]}"; do
         ui_info "Removing podman image: ${value}"
         sudo podman rmi -f "${value}" >/dev/null 2>&1 || podman rmi -f "${value}" >/dev/null 2>&1 || ui_warn "Failed to remove ${value}"
       done
       ;;
     *)
-      # Try docker compose down --rmi all first
       if compose down --rmi all >/dev/null 2>&1; then
         ui_ok "docker compose down --rmi all succeeded"
       else
-        for value in "${imgs[@]}"; do
+        for value in "${uniq[@]}"; do
           ui_info "Removing docker image: ${value}"
           sudo docker image rm -f "${value}" >/dev/null 2>&1 || docker image rm -f "${value}" >/dev/null 2>&1 || ui_warn "Failed to remove ${value}"
         done
@@ -2122,7 +2167,6 @@ delete_images_used_by_compose() {
       ;;
   esac
 }
-
 uninstall_docker_stack() {
   local title="$1"
   load_container_engine
