@@ -3,7 +3,7 @@ services:
   # https://github.com/nextcloud/docker#running-this-image-with-docker-compose
   # https://docs.nextcloud.com/server/latest/admin_manual/configuration_database/linux_database_configuration.html
   db:
-    image: mariadb:lts
+    image: docker.io/library/mariadb:lts
     container_name: nextcloud-db
     restart: unless-stopped
     command:
@@ -29,7 +29,7 @@ services:
       start_period: 30s
 
   nextcloud:
-    image: nextcloud:latest
+    image: docker.io/library/nextcloud:latest
     container_name: nextcloud
     restart: unless-stopped
     depends_on:
@@ -51,7 +51,7 @@ services:
       - nextcloud-net
 
   collabora:
-    image: collabora/code:latest
+    image: docker.io/collabora/code:latest
     container_name: collabora
     restart: unless-stopped
     stdin_open: true
