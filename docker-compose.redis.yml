@@ -4,7 +4,7 @@
 # https://docs.nextcloud.com/server/latest/admin_manual/configuration_server/caching_configuration.html
 services:
   redis:
-    image: docker.io/library/redis:alpine
+    image: ${IMAGE_REGISTRY:-docker.io}/library/redis:alpine
     container_name: nextcloud-redis
     restart: unless-stopped
     networks:
