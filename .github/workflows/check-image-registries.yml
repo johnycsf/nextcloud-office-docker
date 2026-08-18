@@ -26,7 +26,10 @@ jobs:
               if [[ -z "$value" ]]; then
                 continue
               fi
-              if [[ "$value" == \${IMAGE_REGISTRY* ]] || [[ "$value" == docker.io* ]]; then
+              # Allow values that are either templated to IMAGE_REGISTRY, explicitly docker.io,
+              # official GitHub Container Registry (ghcr.io) for projects that publish there, or
+              # local build images (e.g. heimdall:local).
+              if [[ "$value" == \${IMAGE_REGISTRY* ]] || [[ "$value" == docker.io* ]] || [[ "$value" == ghcr.io* ]] || [[ "$value" =~ ^[^/]+:local$ ]]; then
                 continue
               fi
               echo "::error file=$f,line=$lineno::Disallowed image registry: $value"
