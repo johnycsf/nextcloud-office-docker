@@ -244,3 +244,24 @@ Local snapshots stay as incremental hardlink trees (fast rollback). Optionally c
 ## Security
 
 See [SECURITY.md](SECURITY.md) for how to report vulnerabilities.
+\n## Image registry configuration\n\nThis repository defaults to pulling images from docker.io. To override the registry for deployments or compose, set the IMAGE_REGISTRY environment variable or in .env (default: docker.io). Examples:\n\n- Compose: set IMAGE_REGISTRY in .env or export it before running compose.\n- Kubernetes: use envsubst when applying manifests, e.g.:\n\n  IMAGE_REGISTRY=registry.example.com envsubst < deploy.yaml | kubectl apply -f -\n
+
+## Image registry configuration
+
+This repository defaults to pulling images from docker.io. To override the registry for deployments or compose, set the IMAGE_REGISTRY environment variable or add it to .env (default: docker.io). Examples:
+
+- Compose: set IMAGE_REGISTRY in .env or export it before running compose.
+- Kubernetes: use envsubst when applying manifests, e.g.:
+
+  IMAGE_REGISTRY=registry.example.com envsubst < deploy.yaml | kubectl apply -f -
+
+
+## Image registry configuration
+
+This repository defaults to pulling images from docker.io. To override the registry for deployments or compose, set the IMAGE_REGISTRY environment variable or add it to .env (default: docker.io). Examples:
+
+- Compose: set IMAGE_REGISTRY in .env or export it before running compose.
+- Kubernetes: use envsubst when applying manifests, e.g.:
+
+  IMAGE_REGISTRY=registry.example.com envsubst < deploy.yaml | kubectl apply -f -
+
