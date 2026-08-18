@@ -72,15 +72,14 @@ If this stack saved you setup time, please consider sponsoring — it funds:
 git clone https://github.com/johnycsf/nextcloud-office-docker.git
 cd nextcloud-office-docker
 chmod +x manage.sh
-./manage.sh          # interactive control center
-# or: ./manage.sh
-# optional Redis: ./manage.sh install --include-redis
+./manage.sh          # interactive control center (asks about Redis during install)
+# or: ./manage.sh install --include-redis   # skip the question, enable Redis
 ```
 
 The script will:
 
 1. Generate MariaDB passwords into `.env` (if still placeholders)
-2. Start MariaDB + Nextcloud + Collabora (and Redis if you passed `--include-redis`)
+2. Ask whether to include Redis, then start MariaDB + Nextcloud + Collabora (and Redis if you said yes)
 3. Wait for you to create the Nextcloud admin account (DB is already wired)
 4. Wire Nextcloud Office to Collabora
 5. Run connectivity + database checks
@@ -91,11 +90,7 @@ Then try: **+ New → Document**.
 
 Redis is **not** required. It helps with caching and file locking under more concurrent use, matching the [official Nextcloud Compose example](https://github.com/nextcloud/docker#running-this-image-with-docker-compose).
 
-```bash
-./manage.sh install --include-redis
-```
-
-That sets `ENABLE_REDIS=yes` in `.env` and applies `docker-compose.redis.yml` (`redis:alpine` + `REDIS_HOST=redis`). Re-running `./manage.sh` later keeps Redis if already enabled.
+`./manage.sh install` asks with an arrow-key Yes/No. Choose **Yes** to set `ENABLE_REDIS=yes` and apply `docker-compose.redis.yml` (`redis:alpine` + `REDIS_HOST=redis`). `--include-redis` skips the question and enables it. Re-running install later asks whether to keep Redis if it is already enabled.
 
 Fresh data only — do **not** reuse an old SQLite `data/html` tree with this MariaDB setup.
 

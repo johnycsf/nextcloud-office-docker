@@ -120,7 +120,7 @@ parse_install_args() {
       -h|--help) SHOW_HELP=1 ;;
       *)
         echo "Unknown option: ${arg}" >&2
-        echo "Usage: ./manage.sh [--include-redis]" >&2
+        echo "Usage: ./manage.sh install [--include-redis]" >&2
         exit 1
         ;;
     esac
@@ -129,24 +129,60 @@ parse_install_args() {
 
 print_install_help() {
   cat <<'EOF'
-Usage: ./manage.sh [--include-redis]
+Usage: ./manage.sh install [--include-redis]
 
-  --include-redis   Also start official redis:alpine and set REDIS_HOST for Nextcloud
-            (caching / transactional file locking). Optional; MariaDB is always used.
+  Interactive install asks whether to include Redis (arrow-key Yes/No).
+  --include-redis   Skip the question and enable official redis:alpine
+                    (caching / transactional file locking). MariaDB is always used.
 
 Examples:
   ./manage.sh
+  ./manage.sh install
   ./manage.sh install --include-redis
 EOF
 }
 
 apply_redis_preference() {
-  # --include-redis turns Redis on and persists in .env for later compose/occ calls
+  # Interactive install asks; --include-redis forces on. Non-TTY keeps .env as-is
+  # (unset = Redis off) so unattended runs do not hang or surprise-enable Redis.
   if [[ "${WITH_REDIS:-0}" -eq 1 ]]; then
     set_env_var ENABLE_REDIS yes
-    echo "Redis enabled (ENABLE_REDIS=yes). Overlay: docker-compose.redis.yml"
+    ui_ok "Redis enabled (--include-redis). Overlay: docker-compose.redis.yml"
+    load_env
+    return 0
+  fi
+
+  if [[ ! -t 0 ]] || [[ ! -t 1 ]]; then
+    load_env
+    return 0
+  fi
+
+  echo
+  ui_info "Redis is optional. Nextcloud can use it for caching and file locking."
+  local choice
+  if redis_enabled; then
+    ui_choose choice "Redis is already enabled. Keep it?" \
+      "Yes - keep Redis" \
+      "No - disable Redis"
+    case "${choice}" in
+      Yes*) set_env_var ENABLE_REDIS yes ;;
+      *) set_env_var ENABLE_REDIS no ;;
+    esac
+  else
+    ui_choose choice "Include Redis for Nextcloud caching and file locking?" \
+      "Yes - install Redis" \
+      "No - skip Redis"
+    case "${choice}" in
+      Yes*) set_env_var ENABLE_REDIS yes ;;
+      *) set_env_var ENABLE_REDIS no ;;
+    esac
   fi
   load_env
+  if redis_enabled; then
+    ui_ok "Redis enabled (ENABLE_REDIS=yes). Overlay: docker-compose.redis.yml"
+  else
+    ui_info "Redis skipped. Re-run ./manage.sh install later if you want it."
+  fi
 }
 
 wait_for_db() {

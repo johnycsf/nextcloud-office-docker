@@ -71,7 +71,7 @@ echo
 if redis_enabled; then
   ui_ok "Stack: MariaDB + Redis + Nextcloud + Collabora"
 else
-  ui_ok "Stack: MariaDB + Nextcloud + Collabora (Redis skipped - pass --include-redis to enable)"
+  ui_ok "Stack: MariaDB + Nextcloud + Collabora (Redis skipped)"
 fi
 load_env
 if [[ "${NEXTCLOUD_PORT}" == "80" ]]; then

@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Interactive install asks whether to include optional Redis (Yes/No). `--include-redis` still skips the question and enables it.
+
 - Fix root-owned data dirs after compose/restore so host rsync backup/restore works for all users.
 
 - Install can choose **Docker** or **Podman** (`CONTAINER_ENGINE` in `.env`).
