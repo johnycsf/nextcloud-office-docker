@@ -3,7 +3,7 @@ services:
   # https://github.com/nextcloud/docker#running-this-image-with-docker-compose
   # https://docs.nextcloud.com/server/latest/admin_manual/configuration_database/linux_database_configuration.html
   db:
-    image: ${IMAGE_REGISTRY:-docker.io}/library/mariadb:lts
+    image: ${IMAGE_REGISTRY:-docker.io}/library/mariadb:11.8
     container_name: nextcloud-db
     restart: unless-stopped
     command:
@@ -45,6 +45,7 @@ services:
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
     volumes:
       - ./data/html:/var/www/html
+      - ./apache/strict-transport-security.conf:/etc/apache2/conf-enabled/strict-transport-security.conf:ro
     ports:
       - "${NEXTCLOUD_PORT:-8082}:80"
     networks:

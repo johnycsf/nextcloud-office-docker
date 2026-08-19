@@ -1,5 +1,10 @@
 ## Unreleased
 
+- Pin MariaDB to `11.8` (Nextcloud 34 supported range). `mariadb:lts` is 12.x and fails the admin overview database check.
+- Emit `Strict-Transport-Security` (max-age 15552000) from Apache so the HTTP-headers setup check passes.
+- Set `maintenance_window_start` to 06:00 UTC and run `occ maintenance:repair --include-expensive` during Office configure (mimetype migrations).
+
+
 - Interactive install asks whether to include optional Redis (Yes/No). `--include-redis` still skips the question and enables it.
 
 - Fix root-owned data dirs after compose/restore so host rsync backup/restore works for all users.

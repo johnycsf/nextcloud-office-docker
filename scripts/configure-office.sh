@@ -63,6 +63,12 @@ occ config:system:set overwrite.cli.url --value="${NC_URL}" >/dev/null
 occ config:system:set overwriteprotocol --value="http" >/dev/null
 occ config:system:set allow_local_remote_servers --type=boolean --value=true >/dev/null
 
+# 06:00 UTC starts a 4-hour window (02:00–06:00 America/New_York during EDT).
+occ config:system:set maintenance_window_start --type=integer --value=6 >/dev/null
+
+echo "Applying expensive maintenance repairs (mimetype migrations)..."
+occ maintenance:repair --include-expensive
+
 occ app:disable richdocumentscode 2>/dev/null || true
 occ app:disable richdocumentscode_arm64 2>/dev/null || true
 occ app:install richdocuments 2>/dev/null || true
