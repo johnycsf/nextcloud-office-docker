@@ -8,7 +8,7 @@
 
 Deploy [Nextcloud](https://nextcloud.com/) with Docker Compose, including **LibreOffice document editing** via [Collabora Online](https://www.collaboraonline.com/code/).
 
-Uses the **official** [`nextcloud`](https://hub.docker.com/_/nextcloud) image, Collabora’s official [`collabora/code`](https://hub.docker.com/r/collabora/code) image, and **official** [`mariadb:11.8`](https://hub.docker.com/_/mariadb) (not SQLite). Nextcloud 34 recommends MariaDB 10.6–11.8; Docker’s `mariadb:lts` currently tracks 12.x and trips the admin overview warning.
+Uses the **official** [`nextcloud`](https://hub.docker.com/_/nextcloud) image, Collabora’s official [`collabora/code`](https://hub.docker.com/r/collabora/code) image, and **official** [`mariadb:latest`](https://hub.docker.com/_/mariadb) (not SQLite).
 
 > **Updating an older clone?** `git pull` alone will not delete `data/`. Re-running `./manage.sh` / Compose against LinuxServer or SQLite data is **not** supported in-place. Read [BREAKING-CHANGES.md](BREAKING-CHANGES.md).
 
@@ -18,7 +18,7 @@ Kubernetes version: [nextcloud-office-k8s](https://github.com/johnycsf/nextcloud
 
 Nextcloud’s docs treat SQLite as testing/minimal only. [MariaDB and PostgreSQL are recommended](https://docs.nextcloud.com/server/latest/admin_manual/configuration_database/linux_database_configuration.html). This repo follows the [official Nextcloud Docker Compose MariaDB example](https://github.com/nextcloud/docker#running-this-image-with-docker-compose):
 
-- Image: `mariadb:11.8` (Nextcloud 34 supported range; not `mariadb:lts` / 12.x)
+- Image: `mariadb:latest` (floating tag; stack updates pull the current official image)
 - `transaction-isolation=READ-COMMITTED` (required)
 - `binlog-format=ROW` + `utf8mb4` / `utf8mb4_bin` (admin manual guidance)
 - Nextcloud auto-config via `MYSQL_HOST` / `MYSQL_DATABASE` / `MYSQL_USER` / `MYSQL_PASSWORD`

@@ -3,7 +3,7 @@ services:
   # https://github.com/nextcloud/docker#running-this-image-with-docker-compose
   # https://docs.nextcloud.com/server/latest/admin_manual/configuration_database/linux_database_configuration.html
   db:
-    image: ${IMAGE_REGISTRY:-docker.io}/library/mariadb:11.8
+    image: ${IMAGE_REGISTRY:-docker.io}/library/mariadb:latest
     container_name: nextcloud-db
     restart: unless-stopped
     command:
