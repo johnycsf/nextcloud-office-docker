@@ -5,7 +5,7 @@ services:
   db:
     image: ${IMAGE_REGISTRY:-docker.io}/library/mariadb:latest
     container_name: nextcloud-db
-    restart: unless-stopped
+    restart: always
     command:
       - --transaction-isolation=READ-COMMITTED
       - --binlog-format=ROW
@@ -31,7 +31,7 @@ services:
   nextcloud:
     image: ${IMAGE_REGISTRY:-docker.io}/library/nextcloud:latest
     container_name: nextcloud
-    restart: unless-stopped
+    restart: always
     depends_on:
       db:
         condition: service_healthy
@@ -54,7 +54,7 @@ services:
   collabora:
     image: ${IMAGE_REGISTRY:-docker.io}/collabora/code:latest
     container_name: collabora
-    restart: unless-stopped
+    restart: always
     stdin_open: true
     tty: true
     cap_add:

@@ -6,7 +6,7 @@ services:
   redis:
     image: ${IMAGE_REGISTRY:-docker.io}/library/redis:alpine
     container_name: nextcloud-redis
-    restart: unless-stopped
+    restart: always
     networks:
       - nextcloud-net
     healthcheck:
