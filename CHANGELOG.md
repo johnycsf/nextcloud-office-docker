@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Set Compose `restart: always` and enable `podman-restart.service` so rootless Podman brings containers back after a host reboot.
+
 - Use `mariadb:latest` (floating tag, same as Nextcloud/Collabora) so stack updates pull current MariaDB instead of pinning a minor.
 - Emit `Strict-Transport-Security` (max-age 15552000) from Apache so the HTTP-headers setup check passes.
 - Set `maintenance_window_start` to 06:00 UTC and run `occ maintenance:repair --include-expensive` during Office configure (mimetype migrations).
