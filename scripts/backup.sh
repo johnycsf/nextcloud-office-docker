@@ -206,7 +206,48 @@ rsync_incremental() {
   else
     echo "    Full copy (first snapshot or no previous files/)."
   fi
-  rsync "${args[@]}" "${src}/" "${dst}/"
+  # Rootless Podman maps container www-data to a high host UID, so the login
+  # user cannot read 640/770 paths (config.php, data/). unshare runs rsync as
+  # user-namespace root without chowning the live tree away from Nextcloud.
+  # Drop owner/group so snapshot files are created as ns-root (= host user).
+  if [[ "$(_container_engine)" == "podman" ]] && command -v podman >/dev/null 2>&1; then
+    podman unshare rsync "${args[@]}" --no-owner --no-group "${src}/" "${dst}/"
+  else
+    rsync "${args[@]}" "${src}/" "${dst}/"
+  fi
+}
+
+# Official Nextcloud image runs Apache/PHP as www-data (uid/gid 33).
+NEXTCLOUD_WWW_UID=33
+NEXTCLOUD_WWW_GID=33
+
+rsync_restore_files() {
+  # rsync_restore_files SNAP_FILES_DIR DEST_HTML_DIR
+  # Reads snapshots that may still be owned by mapped container UIDs.
+  local src="$1"
+  local dst="$2"
+  mkdir -p "$dst"
+  if [[ "$(_container_engine)" == "podman" ]] && command -v podman >/dev/null 2>&1; then
+    podman unshare rsync -aH --info=progress2 "${src}/" "${dst}/"
+  else
+    rsync -aH --info=progress2 "${src}/" "${dst}/"
+  fi
+}
+
+fix_nextcloud_html_ownership() {
+  # After restore (or any host-owned tree), make html writable by the container.
+  local dir="${1:-data/html}"
+  [[ -d "$dir" ]] || return 0
+  echo "==> Setting ${dir} ownership to www-data (${NEXTCLOUD_WWW_UID}:${NEXTCLOUD_WWW_GID}) for Nextcloud..."
+  if [[ "$(_container_engine)" == "podman" ]] && command -v podman >/dev/null 2>&1; then
+    # Inside the user namespace, uid 33 is the mapped www-data host UID.
+    podman unshare chown -R "${NEXTCLOUD_WWW_UID}:${NEXTCLOUD_WWW_GID}" "$dir"
+  elif command -v sudo >/dev/null 2>&1; then
+    sudo chown -R "${NEXTCLOUD_WWW_UID}:${NEXTCLOUD_WWW_GID}" "$dir"
+  else
+    echo "Warning: cannot chown ${dir} to www-data - Nextcloud may fail to write config/data." >&2
+    return 1
+  fi
 }
 
 write_meta() {
@@ -619,7 +660,8 @@ EOF
   mkdir -p data/html
   ensure_host_owned_dir data/html
   echo "==> Restoring files (rsync progress)..."
-  rsync -aH --info=progress2 "${snap}/files/" data/html/
+  rsync_restore_files "${snap}/files" data/html
+  fix_nextcloud_html_ownership data/html
 
   if [[ -f "${snap}/nextcloud-db.sql" ]]; then
     echo "==> Rebuilding MariaDB datadir and importing verified SQL dump..."
