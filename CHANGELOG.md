@@ -2,6 +2,7 @@
 
 - Rootless Podman backups: run file rsync under `podman unshare` so www-data-owned paths (`config.php`, `data/`) are readable without chowning the live tree.
 - After image updates, run `mariadb-upgrade` so major jumps of `mariadb:latest` do not break `mariadb-dump` / backups.
+- Restore: read snapshots under `podman unshare` (works for older container-UID snapshots) and chown `data/html` to www-data (uid 33) before starting Nextcloud.
 
 - Set Compose `restart: always` and enable `podman-restart.service` so rootless Podman brings containers back after a host reboot.
 
