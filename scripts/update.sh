@@ -153,6 +153,15 @@ echo "==> Recreating containers if images/config changed (brief downtime per ser
 compose up -d --remove-orphans
 wait_for_db
 wait_for_redis
+# Floating mariadb:latest can jump majors; catalogs must be upgraded or
+# mariadb-dump fails with "Column count of mysql.proc is wrong".
+if compose_service_running db; then
+  echo "==> Running mariadb-upgrade (no-op when catalogs already match)..."
+  compose exec -T -e MYSQL_PWD="${MYSQL_ROOT_PASSWORD}" db \
+    mariadb-upgrade -uroot || {
+      echo "Warning: mariadb-upgrade failed - backups may break until it succeeds." >&2
+    }
+fi
 echo "==> Status:"
 compose ps
 echo "==> Removing dangling (untagged) images only - not other projects' images..."

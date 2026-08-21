@@ -206,7 +206,14 @@ rsync_incremental() {
   else
     echo "    Full copy (first snapshot or no previous files/)."
   fi
-  rsync "${args[@]}" "${src}/" "${dst}/"
+  # Rootless Podman maps container www-data to a high host UID, so the login
+  # user cannot read 640/770 paths (config.php, data/). unshare runs rsync as
+  # user-namespace root without chowning the live tree away from Nextcloud.
+  if [[ "$(_container_engine)" == "podman" ]] && command -v podman >/dev/null 2>&1; then
+    podman unshare rsync "${args[@]}" "${src}/" "${dst}/"
+  else
+    rsync "${args[@]}" "${src}/" "${dst}/"
+  fi
 }
 
 write_meta() {

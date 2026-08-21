@@ -1,5 +1,8 @@
 ## Unreleased
 
+- Rootless Podman backups: run file rsync under `podman unshare` so www-data-owned paths (`config.php`, `data/`) are readable without chowning the live tree.
+- After image updates, run `mariadb-upgrade` so major jumps of `mariadb:latest` do not break `mariadb-dump` / backups.
+
 - Set Compose `restart: always` and enable `podman-restart.service` so rootless Podman brings containers back after a host reboot.
 
 - Use `mariadb:latest` (floating tag, same as Nextcloud/Collabora) so stack updates pull current MariaDB instead of pinning a minor.
