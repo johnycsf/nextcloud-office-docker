@@ -198,9 +198,6 @@ rsync_incremental() {
   local src="$1"
   local dst="$2"
   local prev="${3:-}"
-  local host_uid host_gid
-  host_uid="$(id -u)"
-  host_gid="$(id -g)"
   mkdir -p "$dst"
   local -a args=(-aH --delete --info=stats2)
   if [[ -n "$prev" && -d "$prev" ]]; then
@@ -212,9 +209,9 @@ rsync_incremental() {
   # Rootless Podman maps container www-data to a high host UID, so the login
   # user cannot read 640/770 paths (config.php, data/). unshare runs rsync as
   # user-namespace root without chowning the live tree away from Nextcloud.
-  # --chown keeps snapshot files owned by the host user (readable for restore).
+  # Drop owner/group so snapshot files are created as ns-root (= host user).
   if [[ "$(_container_engine)" == "podman" ]] && command -v podman >/dev/null 2>&1; then
-    podman unshare rsync "${args[@]}" --chown="${host_uid}:${host_gid}" "${src}/" "${dst}/"
+    podman unshare rsync "${args[@]}" --no-owner --no-group "${src}/" "${dst}/"
   else
     rsync "${args[@]}" "${src}/" "${dst}/"
   fi
