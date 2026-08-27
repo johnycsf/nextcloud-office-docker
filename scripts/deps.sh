@@ -1917,6 +1917,18 @@ ${UI_BOLD}What makes this stack different${UI_RESET}
 EOF
 }
 
+doctor_backup_tooling() {
+  local cmd
+  ui_step "Backup and restore tools"
+  for cmd in rsync age zip unzip xz; do
+    if command -v "${cmd}" >/dev/null 2>&1; then
+      ui_ok "${cmd} available"
+    else
+      ui_warn "${cmd} missing - re-run ./manage.sh install"
+    fi
+  done
+}
+
 doctor_docker() {
   local title="${1:-App}"
   load_container_engine
@@ -1946,6 +1958,8 @@ doctor_docker() {
   else
     ui_warn "Could not query compose status (is the stack installed?)"
   fi
+
+  doctor_backup_tooling
 
   echo
   ui_step "Disk (data/)"
@@ -1997,6 +2011,8 @@ doctor_k8s() {
   else
     ui_warn "Namespace ${ns} not found - run ./manage.sh"
   fi
+
+  doctor_backup_tooling
 
   echo
   ui_step "Saved install choices"

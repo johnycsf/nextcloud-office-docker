@@ -30,7 +30,7 @@ configure_container_engine
 ui_banner "Nextcloud + Office" "$(compose_stack_subtitle "official Nextcloud, MariaDB, Collabora")"
 
 ui_step "Checking host dependencies"
-ensure_host_deps docker
+ensure_host_deps docker age zip unzip xz
 
 configure_host_port NEXTCLOUD_PORT "Nextcloud HTTP" 8082
 configure_host_port COLLABORA_PORT "Collabora HTTP" 9980
